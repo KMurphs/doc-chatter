@@ -1,0 +1,115 @@
+export BRAZIL_WORKSPACE_DEFAULT_LAYOUT=short
+
+export AUTO_TITLE_SCREENS="NO"
+
+export AWS_EC2_METADATA_DISABLED=true
+
+export PROMPT="
+%{$fg[white]%}(%D %*) <%?> [%~] $program %{$fg[default]%}
+%{$fg[cyan]%}%m %#%{$fg[default]%} "
+
+export RPROMPT=
+
+set-title() {
+    echo -e "\e]0;$*\007"
+}
+
+ssh() {
+    set-title $*;
+    /usr/bin/ssh -2 $*;
+    set-title $HOST;
+}
+
+alias e=emacs
+alias bb=brazil-build
+
+alias bba='brazil-build apollo-pkg'
+alias bre='brazil-runtime-exec'
+alias brc='brazil-recursive-cmd'
+alias bws='brazil ws'
+alias bwsuse='bws use -p'
+alias bwscreate='bws create -n'
+alias brc=brazil-recursive-cmd
+alias bbr='brc brazil-build'
+alias bball='brc --allPackages'
+alias bbb='brc --allPackages brazil-build'
+alias bbra='bbr apollo-pkg'
+
+
+export PATH=$HOME/.toolbox/bin:$PATH
+export PATH=/apollo/env/OdinTools/bin:$PATH
+export PATH=/apollo/env/envImprovement/bin:$PATH
+export PATH=/apollo/env/NodeJS/bin:$PATH
+# export PATH=/usr/local/bin/python3.10:$PATH
+# alias python="/usr/local/bin/python3.10"
+
+fpath=(~/.zsh/completion $fpath)
+autoload -Uz compinit && compinit -i
+export JAVA_HOME=/apollo/env/JavaSE8/jdk1.8
+# export _JAVA_OPTIONS="-Xms2048m -Xmx8192m -Dapple.awt.UIElement=true"
+export PATH=$JAVA_HOME/bin:$PATH
+# alias sam='brazil-build-tool-exec sam'
+
+
+alias cdw='cd ~/workplace'
+alias cdwk='cd ~/workplace/kumo-mercury'
+alias cdwa='cd ~/workplace/absolution'
+
+
+alias gg='git log --graph --oneline'
+alias gga='gg --all'
+alias gdom='git diff origin/mainline'
+alias gs='git status'
+alias grom='git reset origin/mainline'
+alias grom-h='grom --hard'
+alias grbom='git rebase origin/mainline'
+alias grbom-i='grom -i'
+
+
+alias km='date && kinit -f && mwinit -o'
+alias km="date && kinit -f && mwinit --ssh-public-key ~/.ssh/id_ecdsa.pub"
+
+alias akmb='ada credentials update --account=175300657187 --provider=isengard --role=Admin'
+alias akmg='ada credentials update --account=168408843858 --provider=isengard --role=Admin'
+alias akmdev='ada credentials update --account=311371030234 --provider=isengard --role=Admin'
+alias akmbo='akmb --once'
+alias akmgo='akmg --once'
+alias akmdevo='akmdev --once'
+
+alias bb-py='bb format && bb && bb test'
+alias bb-cdk='bb app format && bb'
+alias bb-cdk-list='bb app format && bb && bb cdk list'
+alias bb-jv='bb format && bb'
+alias bbws="~/.bb_workspace.sh"
+
+
+alias sc-e2e='brazil-test-exec PYTHONPATH=/home/kibonges/workplace/support-center/unauth-e2e-tests/env/SupportCenterUnauthenticatedStaticWebsite-Tests-1.0/test-runtime/lib/python3.7/site-packages/py pytest -driver=remote --capability browserName chrome  test-e2e/'
+
+alias scp-template='scp "./file-current-folder" kibonges@cd:~/Pictures'
+
+alias cr-template="branch=$( brazil ws show | grep Workspace | awk '{print $2}' | tr '_' '-' ) \
+        && echo cr --destination-branch mainline \
+                -i \\\x22\"KumoMercuryCommon[origin/mainline:$branch]\"\\\x22 \
+                -i \\\x22\"SupportCaseLambda[origin/mainline:$branch]\"\\\x22"
+
+alias cr-template="echo cr --destination-branch mainline \
+                -i \\\x22\"KumoMercuryCDK[origin/mainline:HEAD]\"\\\x22 \
+                -i \\\x22\"KumoMercuryLambda[origin/mainline:HEAD]\"\\\x22"
+
+export AWS_EC2_METADATA_DISABLED=true
+
+
+
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+export JAVA_HOME="/usr/lib/jvm/java-17-amazon-corretto.x86_64"
+# export _JAVA_OPTIONS="-Xms2048m -Xmx8192m -Dapple.awt.UIElement=true"
+export PATH="$HOME/.sdkman/candidates/gradle/current/bin:$PATH"
+export PATH="$HOME/.sdkman/candidates/maven/current/bin:$PATH"
+
+
+
+
+
