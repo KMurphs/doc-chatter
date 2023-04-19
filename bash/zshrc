@@ -108,6 +108,7 @@ export JAVA_HOME="/usr/lib/jvm/java-17-amazon-corretto.x86_64"
 # export _JAVA_OPTIONS="-Xms2048m -Xmx8192m -Dapple.awt.UIElement=true"
 export PATH="$HOME/.sdkman/candidates/gradle/current/bin:$PATH"
 export PATH="$HOME/.sdkman/candidates/maven/current/bin:$PATH"
+export PATH="$HOME/.sdkman/candidates/kotlin/current/bin:$PATH"
 
 
 
