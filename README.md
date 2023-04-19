@@ -10,3 +10,14 @@ https://devcentral.amazon.com/ac/brazil/package-master/package/go/documentation?
 ## Development
 
 See instructions in DEVELOPMENT.md
+
+
+## Setup
+
+```
+cd ~/workplace
+brazil ws create --name utils --force -vs live
+cd utils && brazil ws use -p KibongesUtils
+chmod +x src/KibongesUtils/setup.sh
+./src/KibongesUtils/setup.sh
+```
