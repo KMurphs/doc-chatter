@@ -15,6 +15,8 @@ See instructions in DEVELOPMENT.md
 ## Setup
 
 ```
+kinit -f && mwinit -o
+
 mkdir ~/workplace || echo "Already exists"
 cd ~/workplace
 
@@ -24,8 +26,6 @@ toolbox install cr brazil-octane batscli ada bemol bones hydra rde brazilcli
 
 brazil ws create --name utils --force -vs live
 cd utils && brazil ws use -p KibongesUtils
-
-kinit -f && mwinit -o
 
 chmod +x src/KibongesUtils/setup.sh
 ./src/KibongesUtils/setup.sh
