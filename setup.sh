@@ -8,11 +8,11 @@ sudo mkdir -p -m 755 /workplace/${USER}
 sudo chown -R ${USER}:amazon /workplace/${USER}
 ln -s /workplace/${USER} ~/workplace
 
-mkdir ~/workplace/kumo-mercury || echo "Already exists"
-mkdir ~/workplace/absolution || echo "Already exists"
-mkdir ~/workplace/phoenix || echo "Already exists"
-mkdir ~/workplace/tutorials || echo "Already exists"
-mkdir ~/workplace/quick-fixes || echo "Already exists"
+mkdir /workplace/kibonges/kumo-mercury || echo "Already exists"
+mkdir /workplace/kibonges/absolution || echo "Already exists"
+mkdir /workplace/kibonges/phoenix || echo "Already exists"
+mkdir /workplace/kibonges/tutorials || echo "Already exists"
+mkdir /workplace/kibonges/quick-fixes || echo "Already exists"
 
 mv ~/.bb_workspace.sh ~/.bb_workspace-backup.sh || echo "File .bb_workspace.sh not found"
 wdir="$(dirname "$0")"
