@@ -2,6 +2,12 @@
 
 TERMINAL_FILE=~/.zshrc
 
+# https://builderhub.corp.amazon.com/docs/brazil/cli-guide/setup-clouddesk.html
+brazil setup completion
+sudo mkdir -p -m 755 /workplace/${USER}
+sudo chown -R ${USER}:amazon /workplace/${USER}
+ln -s /workplace/${USER} ~/workplace
+
 mkdir ~/workplace/kumo-mercury || echo "Already exists"
 mkdir ~/workplace/absolution || echo "Already exists"
 mkdir ~/workplace/phoenix || echo "Already exists"
