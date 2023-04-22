@@ -18,6 +18,9 @@ See instructions in DEVELOPMENT.md
 cd ~/workplace
 brazil ws create --name utils --force -vs live
 cd utils && brazil ws use -p KibongesUtils
+
+kinit -f && mwinit -o
+
 chmod +x src/KibongesUtils/setup.sh
 ./src/KibongesUtils/setup.sh
 ```
