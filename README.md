@@ -24,6 +24,8 @@ cd ~/workplace
 toolbox --version
 toolbox install cr brazil-octane batscli ada bemol bones hydra rde brazilcli
 
+. ~/.zshrc
+
 brazil ws create --name utils --force -vs live
 cd utils && brazil ws use -p KibongesUtils
 
