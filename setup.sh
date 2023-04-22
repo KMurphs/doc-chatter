@@ -8,10 +8,10 @@ mkdir ~/workplace/phoenix || echo "Already exists"
 mkdir ~/workplace/tutorials || echo "Already exists"
 mkdir ~/workplace/quick-fixes || echo "Already exists"
 
-mv ~/.bb_worspace.sh ~/.bb_worspace-backup.sh || echo "File .bb_worspace.sh not found"
+mv ~/.bb_workspace.sh ~/.bb_workspace-backup.sh || echo "File .bb_workspace.sh not found"
 wdir="$(dirname "$0")"
-cp $wdir/bash/bb_worspace.sh ~/.bb_worspace.sh
-chmod +x ~/.bb_worspace.sh
+cp $wdir/bash/bb_workspace.sh ~/.bb_workspace.sh
+chmod +x ~/.bb_workspace.sh
 
 mv $TERMINAL_FILE $TERMINAL_FILE-backup || echo "File .zshrc not found"
 wdir="$(dirname "$0")"
