@@ -15,6 +15,7 @@ See instructions in DEVELOPMENT.md
 ## Setup
 
 ```
+mkdir ~/workplace || echo "Already exists"
 cd ~/workplace
 brazil ws create --name utils --force -vs live
 cd utils && brazil ws use -p KibongesUtils
