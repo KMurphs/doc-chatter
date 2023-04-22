@@ -33,3 +33,22 @@ chmod +x src/KibongesUtils/setup.sh
 ./src/KibongesUtils/setup.sh
 . ~/.zshrc
 ```
+
+### SSH Shortcut 
+```
+# https://builderhub.corp.amazon.com/docs/cloud-desktop/user-guide/logging-in.html#set-up-a-ssh-shortcut-optional
+ls ~/.ssh/config
+
+# If this file is not present
+# mkdir ~/.ssh
+# touch ~/.ssh/config
+# chmod 600 ~/.ssh/config
+
+# Add entries
+Host cd2
+   HostName <dev-desktop-dns-name>
+   User kibonges
+
+# try logging in
+ssh cd2
+```
