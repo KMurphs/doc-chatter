@@ -17,6 +17,11 @@ See instructions in DEVELOPMENT.md
 ```
 mkdir ~/workplace || echo "Already exists"
 cd ~/workplace
+
+# https://builderhub.corp.amazon.com/docs/dev-setup/clouddesktop-configure.html
+toolbox --version
+toolbox install cr brazil-octane batscli ada bemol bones hydra rde brazilcli
+
 brazil ws create --name utils --force -vs live
 cd utils && brazil ws use -p KibongesUtils
 
