@@ -31,4 +31,5 @@ cd utils && brazil ws use -p KibongesUtils
 
 chmod +x src/KibongesUtils/setup.sh
 ./src/KibongesUtils/setup.sh
+. ~/.zshrc
 ```

@@ -99,16 +99,12 @@ alias cr-template="echo cr --destination-branch mainline \
 export AWS_EC2_METADATA_DISABLED=true
 
 
-
+# export _JAVA_OPTIONS="-Xms2048m -Xmx8192m -Dapple.awt.UIElement=true"
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-export JAVA_HOME="/usr/lib/jvm/java-17-amazon-corretto.x86_64"
-# export _JAVA_OPTIONS="-Xms2048m -Xmx8192m -Dapple.awt.UIElement=true"
-export PATH="$HOME/.sdkman/candidates/gradle/current/bin:$PATH"
-export PATH="$HOME/.sdkman/candidates/maven/current/bin:$PATH"
-export PATH="$HOME/.sdkman/candidates/kotlin/current/bin:$PATH"
+
 
 
 
