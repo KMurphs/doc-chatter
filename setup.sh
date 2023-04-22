@@ -21,7 +21,7 @@ cp $wdir/bash/zshrc $TERMINAL_FILE
 # https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/amazon-linux-install.html
 JAVA_VERSION=17
 sudo yum install java-$JAVA_VERSION-amazon-corretto-devel
-grep JAVA_HOME $TERMINAL_FILE || echo "export JAVA_HOME=\"/usr/lib/jvm/java-$JAVA_VERSION-amazon-corretto.x86_64\"" >> $TERMINAL_FILE
+echo "export JAVA_HOME=\"/usr/lib/jvm/java-$JAVA_VERSION-amazon-corretto.x86_64\"" >> $TERMINAL_FILE
 
 # https://w.amazon.com/bin/view/VisualStudioCode/Kotlin/
 curl -s "https://get.sdkman.io" | bash
