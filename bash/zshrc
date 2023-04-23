@@ -109,16 +109,20 @@ export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
 
-alias cw-log-groups="aws logs describe-log-groups --query 'logGroups[*].logGroupName'"
-alias cw-query-results="aws logs get-query-results --query-id $(echo '$QUERY_ID') --query \"results[*][?field=='@timestamp'||field=='@message']\""
+alias aws-cw-log-groups="aws logs describe-log-groups --query 'logGroups[*].logGroupName'"
+alias aws-cw-query-results="aws logs get-query-results --query-id $(echo '$QUERY_ID') --query \"results[*][?field=='@timestamp'||field=='@message']\""
 # https://gist.github.com/dsmrt/7400867c88e599e8bfc0266a61073f29
-cw-query-default() {
-echo "\
-fields @timestamp, @message \n\
-| sort @timestamp desc"
+aws-cw-query-template() {
+    TMP_FILE=/tmp/query
+    echo aws-cw-log-groups
+    echo aws-cw-query-start "/aws/lambda/KumoMercury_EmailProcessor" file://$TMP_FILE "30 minutes ago" "now"
+    echo "\
+    fields @timestamp, @message \n\
+    | sort @timestamp desc >> $TMP_FILE"
+    echo aws-cw-query-results
 }
 
-cw-query-start() {
+aws-cw-query-start() {
     START="${3:-30 minutes ago}"
     END="${4:-now}"
     START_TS=$(date -d $START "+%s")
@@ -132,6 +136,6 @@ cw-query-start() {
     --query queryId \
     --output text)
 
-    echo "Started query $QUERY_ID between $START($(date -d $START)) and $END($(date -d $END)) from file $2"
+    echo "Started query $QUERY_ID between $START($(date -d $START)) and $END($(date -d $END))"
 }
 
