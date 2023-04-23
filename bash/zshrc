@@ -111,7 +111,7 @@ export SDKMAN_DIR="$HOME/.sdkman"
 
 alias aws-cw-log-groups="aws logs describe-log-groups --query 'logGroups[*].logGroupName'"
 alias aws-cw-query-results="aws logs get-query-results --query-id $(echo '$QUERY_ID')" 
-alias aws-cw-query-results-b="aws logs get-query-results --query-id $(echo '$QUERY_ID') --query \"results[*][?field=='@timestamp'||field=='@message']\" --output text" 
+alias aws-cw-query-results-b="aws-cw-query-results --query \"results[*][?field=='@timestamp'||field=='@message']\" --output text" 
 # https://gist.github.com/dsmrt/7400867c88e599e8bfc0266a61073f29
 aws-cw-query-template() {
     TMP_FILE=/tmp/query
@@ -119,9 +119,10 @@ aws-cw-query-template() {
     echo aws-cw-query-start \"/aws/lambda/KumoMercury_EmailProcessor\" file://$TMP_FILE \"30 minutes ago\" \"now\"
     echo aws-cw-query-start \"/aws/lambda/KumoMercury_EmailProcessor\" \'filter level!=\"debug\" \| limit 1\' \"2023-01-23T08:00:00\" \"2023-01-23T12:00:00\"
     echo "Example Query in $TMP_FILE:\n\
-    fields @timestamp, @message \n\
-    | sort @timestamp desc"
+fields @timestamp, @message \n\
+| sort @timestamp desc"
     echo aws-cw-query-results-b
+    echo aws-cw-query-results --query "results[*][?field=='@timestamp'||field=='@message']" --output text
 }
 
 aws-cw-query-start() {
