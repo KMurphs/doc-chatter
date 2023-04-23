@@ -116,6 +116,7 @@ alias aws-cw-query-results-b="aws-cw-query-results --query \"results[*][?field==
 aws-cw-query-template() {
     TMP_FILE=/tmp/query
     echo "Typical Steps:"
+    echo "  \n"
     echo "  " aws-cw-log-groups
     echo "  \n"
     echo "  " aws-cw-query-start \"/aws/lambda/KumoMercury_EmailProcessor\" \'filter level!=\"debug\" \| limit 1\' \"2023-01-23T08:00:00\" \"2023-01-23T12:00:00\"
