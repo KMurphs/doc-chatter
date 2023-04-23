@@ -4,6 +4,7 @@ TERMINAL_FILE=zshrc
 BB_WS_FILE=bb_workspace.sh
 
 wdir="$(dirname "$0")"
+wdir=$(dirname -- "$( readlink -f -- "$0"; )";)
 echo Script Directory: $wdir
 
 mkdir /tmp || echo "Already exists"
