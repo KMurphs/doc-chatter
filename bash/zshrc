@@ -67,7 +67,7 @@ alias grbom-i='grom -i'
 
 
 alias km='date && kinit -f && mwinit -o'
-alias km="date && kinit -f && mwinit --ssh-public-key ~/.ssh/id_ecdsa.pub"
+alias km="date && kinit -f && (mwinit --ssh-public-key ~/.ssh/id_ecdsa.pub || mwinit --ssh-public-key ~/.ssh/id_ecdsa.pub -o)"
 
 alias akmb='ada credentials update --account=175300657187 --provider=isengard --role=Admin'
 alias akmg='ada credentials update --account=168408843858 --provider=isengard --role=Admin'
