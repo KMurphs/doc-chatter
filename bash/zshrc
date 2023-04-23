@@ -115,10 +115,11 @@ alias aws-cw-query-results="aws logs get-query-results --query-id $(echo '$QUERY
 aws-cw-query-template() {
     TMP_FILE=/tmp/query
     echo aws-cw-log-groups
-    echo aws-cw-query-start "/aws/lambda/KumoMercury_EmailProcessor" file://$TMP_FILE "30 minutes ago" "now"
-    echo "\
+    echo aws-cw-query-start \"/aws/lambda/KumoMercury_EmailProcessor\" file://$TMP_FILE \"30 minutes ago\" \"now\"
+    echo aws-cw-query-start \"/aws/lambda/KumoMercury_EmailProcessor\" \'filter level!="debug" | limit 1\' \"2023-01-23T08:00:00\" \"2023-01-23T12:00:00\"
+    echo "Example Query in $TMP_FILE:\
     fields @timestamp, @message \n\
-    | sort @timestamp desc >> $TMP_FILE"
+    | sort @timestamp desc"
     echo aws-cw-query-results
 }
 
