@@ -82,6 +82,9 @@ alias bb-cdk-list='bb app format && bb && bb cdk list'
 alias bb-jv='bb format && bb'
 alias bbws="~/.bb_workspace.sh"
 
+alias rg-iad="export AWS_DEFAULT_REGION=us-east-1"
+alias rg-pdx="export AWS_DEFAULT_REGION=us-west-2"
+alias rg-dub="export AWS_DEFAULT_REGION=eu-west-1"
 
 alias sc-e2e='brazil-test-exec PYTHONPATH=/home/kibonges/workplace/support-center/unauth-e2e-tests/env/SupportCenterUnauthenticatedStaticWebsite-Tests-1.0/test-runtime/lib/python3.7/site-packages/py pytest -driver=remote --capability browserName chrome  test-e2e/'
 
@@ -106,7 +109,38 @@ export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
 
+alias cw-log-groups="aws logs describe-log-groups --query 'logGroups[*].logGroupName'"
+alias cw-query-results="aws logs get-query-results --query-id $(echo '$QUERY_ID') --query \"results[*][?field=='@timestamp'||field=='@message']\""
+# https://gist.github.com/dsmrt/7400867c88e599e8bfc0266a61073f29
+# cw-query-start() {
+#     START="${3:-$(date -d '30 minutes ago' "+%s")}"
+#     END="${4:-$(date "+%s")}"
 
+#     export QUERY_ID=$(aws logs start-query \
+#     --log-group-name "$1"\
+#     --start-time "$START" \
+#     --end-time "$END" \
+#     --query-string "$2" \
+#     --query queryId \
+#     --output text)
 
+#     echo "Started query $QUERY_ID"
+# }
 
+cw-query-start() {
+    START="${3:-30 minutes ago}"
+    END="${4:-now}"
+    START_TS=$(date -d $START "+%s")
+    END_TS=$(date -d $END "+%s")
+
+    export QUERY_ID=$(aws logs start-query \
+    --log-group-name "$1"\
+    --start-time "$START_TS" \
+    --end-time "$END_TS" \
+    --query-string "$2" \
+    --query queryId \
+    --output text)
+
+    echo "Started query $QUERY_ID between $START($(date -d $START)) and $END($(date -d $END))"
+}
 

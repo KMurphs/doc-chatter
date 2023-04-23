@@ -2,6 +2,9 @@
 
 TERMINAL_FILE=~/.zshrc
 
+mkdir /tmp || echo "Already exists"
+cd /tmp
+
 # https://builderhub.corp.amazon.com/docs/brazil/cli-guide/setup-clouddesk.html
 brazil setup completion
 sudo mkdir -p -m 755 /workplace/${USER}
@@ -42,6 +45,11 @@ grep maven $TERMINAL_FILE || echo 'export PATH="$HOME/.sdkman/candidates/maven/c
 
 sdk install kotlin
 grep kotlin $TERMINAL_FILE || echo 'export PATH="$HOME/.sdkman/candidates/kotlin/current/bin:$PATH"' >> $TERMINAL_FILE
+
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
 cd ~
 
