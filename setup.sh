@@ -1,6 +1,10 @@
 #!/bin/bash
 
-TERMINAL_FILE=~/.zshrc
+TERMINAL_FILE=zshrc
+BB_WS_FILE=bb_workspace.sh
+
+wdir="$(dirname "$0")"
+echo Script Directory: $wdir
 
 mkdir /tmp || echo "Already exists"
 cd /tmp
@@ -17,15 +21,13 @@ mkdir /workplace/kibonges/phoenix || echo "Already exists"
 mkdir /workplace/kibonges/tutorials || echo "Already exists"
 mkdir /workplace/kibonges/quick-fixes || echo "Already exists"
 
-mv ~/.bb_workspace.sh ~/.bb_workspace-backup.sh || echo "File .bb_workspace.sh not found"
-wdir="$(dirname "$0")"
-cp $wdir/bash/bb_workspace.sh ~/.bb_workspace.sh
-chmod +x ~/.bb_workspace.sh
+mv ~/.$BB_WS_FILE ~/.bb_workspace-backup.sh || echo "File .$BB_WS_FILE not found"
+cp $wdir/bash/$BB_WS_FILE ~/.$BB_WS_FILE
+chmod +x ~/.$BB_WS_FILE
 
-mv $TERMINAL_FILE $TERMINAL_FILE-backup || echo "File .zshrc not found"
-wdir="$(dirname "$0")"
-cp $wdir/bash/zshrc $TERMINAL_FILE
-. $TERMINAL_FILE
+mv ~/.$TERMINAL_FILE ~/.$TERMINAL_FILE-backup || echo "File .$TERMINAL_FILE not found"
+cp $wdir/bash/$TERMINAL_FILE ~/.$TERMINAL_FILE
+. ~/.$TERMINAL_FILE
 
 # https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/amazon-linux-install.html
 JAVA_VERSION=17
