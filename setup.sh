@@ -28,7 +28,7 @@ chmod +x ~/.$BB_WS_FILE
 
 mv ~/.$TERMINAL_FILE ~/.$TERMINAL_FILE-backup || echo "File .$TERMINAL_FILE not found"
 cp $wdir/bash/$TERMINAL_FILE ~/.$TERMINAL_FILE
-. ~/.$TERMINAL_FILE
+source ~/.$TERMINAL_FILE
 
 # https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/amazon-linux-install.html
 JAVA_VERSION=17

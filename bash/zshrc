@@ -128,7 +128,7 @@ cw-query-start() {
     --log-group-name "$1"\
     --start-time "$START_TS" \
     --end-time "$END_TS" \
-    --query-string "file://$2" \
+    --query-string "$2" \
     --query queryId \
     --output text)
 
