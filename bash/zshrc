@@ -99,6 +99,8 @@ alias cr-template="echo cr --destination-branch mainline \
                 -i \\\x22\"KumoMercuryCDK[origin/mainline:HEAD]\"\\\x22 \
                 -i \\\x22\"KumoMercuryLambda[origin/mainline:HEAD]\"\\\x22"
 
+alias cr-template="brazil ws show | grep \">\" | awk '{print \$1}' | awk -F '-[0-9\.]+$' '/.+/{print \"-i \\\"\"\$1\"\[origin/mainline:HEAD\]\\\"\"}'  | tr '\n' ' ' | awk '{print \"cr --destination-branch mainline \"\$0}' "
+
 export AWS_EC2_METADATA_DISABLED=true
 
 
@@ -146,3 +148,5 @@ aws-cw-query-start() {
     echo "Started query $QUERY_ID between $START($(date -d $START)) and $END($(date -d $END))"
 }
 
+# https://stackoverflow.com/questions/53930305/nodemon-error-system-limit-for-number-of-file-watchers-reached
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
