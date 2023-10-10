@@ -56,9 +56,7 @@ bindkey "^[[B" history-beginning-search-forward-end
 # https://askubuntu.com/questions/23630/how-do-you-share-history-between-terminals-in-zsh
 setopt share_history
 export JAVA_HOME=/apollo/env/JavaSE8/jdk1.8
-export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto.x86_64
 # export _JAVA_OPTIONS="-Xms2048m -Xmx8192m -Dapple.awt.UIElement=true"
-export PATH=$JAVA_HOME/bin:$PATH
 # alias sam='brazil-build-tool-exec sam'
 export PATH=$HOME/.sdkman/candidates/gradle/current/bin:$PATH
 export PATH=$HOME/.sdkman/candidates/maven/current/bin:$PATH
@@ -84,6 +82,7 @@ alias grbom-i='grom -i'
 MW_KEY_FILE=~/.ssh/id_ecdsa.pub
 alias km='date && kinit -f && mwinit -o'
 alias km="date && kinit -f && (mwinit --ssh-public-key $MW_KEY_FILE || mwinit --ssh-public-key $MW_KEY_FILE -o)"
+alias km="date && kinit -f && (mwinit --ssh-public-key $MW_KEY_FILE -o)"
 
 alias akmb='ada credentials update --account=175300657187 --provider=isengard --role=Admin'
 alias akmg='ada credentials update --account=168408843858 --provider=isengard --role=Admin'
@@ -177,9 +176,6 @@ aws-cw-query-start() {
     echo "Started query $QUERY_ID between $START($(date -d $START)) and $END($(date -d $END))"
 }
 
-# https://stackoverflow.com/questions/53930305/nodemon-error-system-limit-for-number-of-file-watchers-reached
-echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
-
 jccc () {
     cat $1 | grep -e '^[^"]*"[^"]*pc' -e '^[^"]*"[^"]*nc'
 }
@@ -210,7 +206,8 @@ export PATH="$PATH:/home/kibonges/.local/share/coursier/bin"
 # <<< coursier install directory <<<
 
 # https://stackoverflow.com/questions/53930305/nodemon-error-system-limit-for-number-of-file-watchers-reached
-echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+grep fs.inotify.max_user_watches=1310720 /etc/sysctl.conf > /dev/null || (echo fs.inotify.max_user_watches=1310720 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p)
+
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
@@ -223,3 +220,4 @@ source ~/.local/share/rtx/completions.zsh
 function mcurl() {
     /usr/bin/curl "$@" -L --cookie ~/.midway/cookie --cookie-jar ~/.midway/cookie
 }
+
