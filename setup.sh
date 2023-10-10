@@ -56,12 +56,14 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 unzip awscliv2.zip
 sudo ./aws/install
 
+kinit && mwinit -o
+
 # https://w.amazon.com/bin/view/VisualStudioCode/Viceroy/
-curl "https://code.amazon.com/packages/Viceroy/releases/1.0/latest_artifact?version_set=Viceroy/release&path=ext/vscode-brazil.vsix&download=true" -o "vscode-brazil-viceroy.vsix"
+mcurl "https://code.amazon.com/packages/Viceroy/releases/1.0/latest_artifact?version_set=Viceroy/release&path=ext/vscode-brazil.vsix&download=true" -o "vscode-brazil-viceroy.vsix" -L 
 
 # https://builderhub.corp.amazon.com/docs/black-caiman/user-guide/getting-started.html#download
-curl "https://code.amazon.com/packages/IntelliJPluginRepositoryAuth/releases/2023.2/latest_artifact?version_set=BlackCaiman/stable&path=distributions/amazon-auth-2023.2.zip" -o "amazon-auth-2023.2.zip"
-curl "https://code.amazon.com/packages/BlackCaiman/releases/2023.2/latest_artifact?version_set=BlackCaiman/stable&path=intellij-plugins/BlackCaiman-2023.2.zip" -o "BlackCaiman-2023.2.zip"
+mcurl "https://prod.artifactbrowser.brazil.aws.dev/api/v1/packages/IntelliJPluginRepositoryAuth/versions/2023.2.177.0/platforms/AL2_x86_64/flavors/DEV.STD.PTHREAD/distributions/amazon-auth-2023.2.zip" -o "amazon-auth-2023.2.zip" -L 
+mcurl "https://prod.artifactbrowser.brazil.aws.dev/api/v1/packages/BlackCaiman/versions/2023.2.363.0/platforms/AL2_x86_64/flavors/DEV.STD.PTHREAD/intellij-plugins/BlackCaiman-2023.2.zip" -o "BlackCaiman-2023.2.zip" -L 
 
 cd ~
 

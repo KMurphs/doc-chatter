@@ -126,12 +126,9 @@ alias cr-template="echo cr --destination-branch mainline \
                 -i \\\x22\"KumoMercuryCDK[origin/mainline:HEAD]\"\\\x22 \
                 -i \\\x22\"KumoMercuryLambda[origin/mainline:HEAD]\"\\\x22"
 
-<<<<<<< Updated upstream
 alias cr-template="brazil ws show | grep \">\" | awk '{print \$1}' | awk -F '-[0-9\.]+$' '/.+/{print \"-i \\\"\"\$1\"\[origin/mainline:HEAD\]\\\"\"}'  | tr '\n' ' ' | awk '{print \"cr --destination-branch mainline \"\$0}' "
 alias cr-template="brazil ws show | grep \">\" | awk '{print \$1}' | awk -F '-[0-9\\\.]+$' '/.+/{print \"-i \\\"\"\$1\"[origin/mainline:HEAD]\\\"\"}'  | tr '\n' ' ' | awk '{print \"cr --destination-branch mainline \"\$0}' "
-=======
 alias cr-template="rev=\$( cr-rev ) && rev=\$( if [ \$rev ]; then echo -r \$rev; fi) && brazil ws show | grep \">\" | awk '{print \$1}' | awk -F '-[0-9\\\.]+$' '/.+/{print \"-i \\\"\"\$1\"[origin/mainline:HEAD]\\\"\"}'  | tr '\n' ' ' | awk -v rev=\$rev '{print \"cr --destination-branch mainline \"\$0\" \" rev}' "
->>>>>>> Stashed changes
 alias cr-template="rev=\$( cr-rev ) && rev=\$( if [ \$rev ]; then echo -r \$rev; fi) && brazil ws show | grep \">\" | awk '{print \$1}' | awk -F '-[0-9\\\.]+$' '/.+/{print \"-i \\\"\"\$1\"[origin/mainline:HEAD]\\\"\"}'  | tr '\n' ' ' | awk -v rev=\$rev '{print \"cr --destination-branch mainline \"\$0\" \" rev}' "
 export AWS_EC2_METADATA_DISABLED=true
 
@@ -211,6 +208,16 @@ jcccall () {
 # >>> coursier install directory >>>
 export PATH="$PATH:/home/kibonges/.local/share/coursier/bin"
 # <<< coursier install directory <<<
+
+# https://stackoverflow.com/questions/53930305/nodemon-error-system-limit-for-number-of-file-watchers-reached
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Set up rtx for runtime management
+eval "$(/home/kibonges/.local/share/rtx/bin/rtx activate zsh)"
+source ~/.local/share/rtx/completions.zsh
 
 
 function mcurl() {
