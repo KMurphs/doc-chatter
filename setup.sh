@@ -9,6 +9,8 @@ echo Script Directory: $wdir
 
 mkdir /tmp || echo "Already exists"
 cd /tmp
+mkdir tmp || echo "Already exists"
+cd tmp
 
 # https://builderhub.corp.amazon.com/docs/brazil/cli-guide/setup-clouddesk.html
 brazil setup completion
@@ -53,6 +55,13 @@ grep kotlin $TERMINAL_FILE || echo 'export PATH="$HOME/.sdkman/candidates/kotlin
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
+
+# https://w.amazon.com/bin/view/VisualStudioCode/Viceroy/
+curl "https://code.amazon.com/packages/Viceroy/releases/1.0/latest_artifact?version_set=Viceroy/release&path=ext/vscode-brazil.vsix&download=true" -o "vscode-brazil-viceroy.vsix"
+
+# https://builderhub.corp.amazon.com/docs/black-caiman/user-guide/getting-started.html#download
+curl "https://code.amazon.com/packages/IntelliJPluginRepositoryAuth/releases/2023.2/latest_artifact?version_set=BlackCaiman/stable&path=distributions/amazon-auth-2023.2.zip" -o "amazon-auth-2023.2.zip"
+curl "https://code.amazon.com/packages/BlackCaiman/releases/2023.2/latest_artifact?version_set=BlackCaiman/stable&path=intellij-plugins/BlackCaiman-2023.2.zip" -o "BlackCaiman-2023.2.zip"
 
 cd ~
 
