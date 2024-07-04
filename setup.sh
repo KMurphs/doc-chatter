@@ -74,5 +74,27 @@ mcurl "https://code.amazon.com/packages/Viceroy/releases/1.0/latest_artifact?ver
 mcurl "https://prod.artifactbrowser.brazil.aws.dev/api/v1/packages/IntelliJPluginRepositoryAuth/versions/2023.2.177.0/platforms/AL2_x86_64/flavors/DEV.STD.PTHREAD/distributions/amazon-auth-2023.2.zip" -o "amazon-auth-2023.2.zip" -L 
 mcurl "https://prod.artifactbrowser.brazil.aws.dev/api/v1/packages/BlackCaiman/versions/2023.2.363.0/platforms/AL2_x86_64/flavors/DEV.STD.PTHREAD/intellij-plugins/BlackCaiman-2023.2.zip" -o "BlackCaiman-2023.2.zip" -L 
 
+
+function schedule_daily_reboot(){
+    temp_cron=$(mktemp)
+    crontab -l > $temp_cron
+
+    cron_job="0 0 * * * /sbin/shutdown -r now"
+
+    # Check if the cron job already exists
+    if grep -Fxq "$cron_job" $temp_cron; then
+        echo "Cron job already exists: The machine will reboot every midnight."
+        rm $temp_cron
+        exit 0
+    fi
+
+    echo "$cron_job" >> $temp_cron
+    crontab $temp_cron
+    rm $temp_cron
+    echo "Cron job added: The machine will reboot every midnight."
+}
+
+schedule_daily_reboot
+
 cd ~
 
