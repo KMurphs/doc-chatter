@@ -96,5 +96,27 @@ function schedule_daily_reboot(){
 
 schedule_daily_reboot
 
+
+function to_gif() {
+    # https://gist.github.com/SheldonWangRJT/8d3f44a35c8d1386a396b9b49b43c385
+    # brew install ffmpeg
+    # brew install gifsicle
+    # ffmpeg -i in.mov -pix_fmt rgb8 -r 10 output.gif && gifsicle -O3 output.gif -o output.gif
+    
+    # Prompt for the input file
+    read -p "Enter the path to the input file (e.g., /path/to/file.mov): " input_file
+
+    # Define the output path in the Downloads folder
+    output_file=~/Downloads/output.gif
+
+    # Run the ffmpeg and gifsicle commands
+    if [[ -f "$input_file" ]]; then
+        ffmpeg -i "$input_file" -pix_fmt rgb8 -r 10 "$output_file" && gifsicle -O3 "$output_file" -o "$output_file"
+        echo "Conversion complete. GIF saved to $output_file"
+    else
+        echo "File not found: $input_file"
+    fi
+}
+
 cd ~
 
