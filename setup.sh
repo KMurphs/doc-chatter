@@ -96,6 +96,7 @@ function schedule_daily_reboot(){
 
 schedule_daily_reboot
 
+alias chrome-unsafe='open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir=/tmp/chrome_dev_test --disable-web-security'
 
 function to_gif() {
     # https://gist.github.com/SheldonWangRJT/8d3f44a35c8d1386a396b9b49b43c385
