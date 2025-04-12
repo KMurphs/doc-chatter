@@ -1,28 +1,27 @@
-import pymupdf as  fitz # PyMuPDF
-import boto3
-import re
 import os
+import re
+
+import boto3
+import pymupdf as fitz  # PyMuPDF
 from pydub import AudioSegment
 
 chapter_titles = [
-"System Design Interviews: A step by step guide Designing a URL Shortening service like TinyURL",
-"Designing Pastebin",
-"Designing Instagram",
-"Designing Dropbox",
-"Designing Facebook Messenger",
-"Designing Twitter",
-"Designing Youtube or Netflix",
-"Designing Typeahead Suggestion",
-"Designing an API Rate Limiter",
-"Designing Twitter Search Designing a Web Crawler",
-"Designing Facebook's Newsfeed",
-"Designing Yelp or Nearby Friends",
-"Designing Uber backend",
-"Design Ticketmaster (\\*New\\*)",
-"Additional Resources",
+    "System Design Interviews: A step by step guide Designing a URL Shortening service like TinyURL",
+    "Designing Pastebin",
+    "Designing Instagram",
+    "Designing Dropbox",
+    "Designing Facebook Messenger",
+    "Designing Twitter",
+    "Designing Youtube or Netflix",
+    "Designing Typeahead Suggestion",
+    "Designing an API Rate Limiter",
+    "Designing Twitter Search Designing a Web Crawler",
+    "Designing Facebook's Newsfeed",
+    "Designing Yelp or Nearby Friends",
+    "Designing Uber backend",
+    "Design Ticketmaster (\\*New\\*)",
+    "Additional Resources",
 ]
-
-
 
 
 def extract_chapters_from_pdf(pdf_path):
@@ -30,7 +29,7 @@ def extract_chapters_from_pdf(pdf_path):
     full_text = ""
     for page in doc:
         full_text += page.get_text()
-    
+
     chapter_pattern = re.compile(rf'{"|".join(map(re.escape, chapter_titles))}', re.IGNORECASE)
     chapters = []
     current_title = "Introduction"
@@ -50,11 +49,12 @@ def extract_chapters_from_pdf(pdf_path):
 
     return chapters
 
+
 def prepare_text_for_ssml(text):
     # Escape special characters
-    text = re.sub(r'<[^>]+>', '', text)
-    text = text.replace('</', ' ')
-    text = text.replace('&', ' and ')
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.replace("</", " ")
+    text = text.replace("&", " and ")
     return text.strip()
 
 
@@ -62,7 +62,7 @@ def create_ssml_text(text, is_title=False):
     """Create SSML with supported tags"""
     # Clean the text of any existing XML-like content
     text = prepare_text_for_ssml(text)
-    
+
     if is_title:
         ssml = f"""<speak>
             <amazon:effect name="drc">{text}</amazon:effect>
@@ -73,16 +73,17 @@ def create_ssml_text(text, is_title=False):
             <amazon:effect name="drc">{text}</amazon:effect>
             <break time="1s"/>
         </speak>"""
-    
+
     return ssml.strip()
+
 
 def chunk_text(text, max_chars=2900):
     """Split text into chunks respecting sentence boundaries"""
-    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = re.split(r"(?<=[.!?])\s+", text)
     chunks = []
     current_chunk = []
     current_length = 0
-    
+
     for sentence in sentences:
         sentence_len = len(sentence)
         if current_length + sentence_len + 1 <= max_chars:
@@ -90,78 +91,77 @@ def chunk_text(text, max_chars=2900):
             current_length += sentence_len + 1
         else:
             if current_chunk:
-                chunks.append(' '.join(current_chunk))
+                chunks.append(" ".join(current_chunk))
             current_chunk = [sentence]
             current_length = sentence_len
-    
+
     if current_chunk:
-        chunks.append(' '.join(current_chunk))
-    
+        chunks.append(" ".join(current_chunk))
+
     return chunks
 
-def synthesize_speech(text, output_file, voice_id='Joanna'):
+
+def synthesize_speech(text, output_file, voice_id="Joanna"):
     """Synthesize speech using Amazon Polly"""
-    polly = boto3.client('polly')
+    polly = boto3.client("polly")
     try:
         response = polly.synthesize_speech(
-            Engine='neural',
-            Text=text,
-            TextType='ssml',
-            OutputFormat='mp3',
-            VoiceId=voice_id
+            Engine="neural", Text=text, TextType="ssml", OutputFormat="mp3", VoiceId=voice_id
         )
-        
-        with open(output_file, 'wb') as file:
-            file.write(response['AudioStream'].read())
+
+        with open(output_file, "wb") as file:
+            file.write(response["AudioStream"].read())
         return True
     except Exception as e:
         print(f"Error synthesizing speech: {e}")
         return False
 
+
 def process_chapter(chapter_title, chapter_text, output_dir, chapter_num):
     """Process a single chapter"""
-    chapter_dir = os.path.join(output_dir, f'chapter_{chapter_num:02d}')
+    chapter_dir = os.path.join(output_dir, f"chapter_{chapter_num:02d}")
     os.makedirs(chapter_dir, exist_ok=True)
-    
+
     # Process title
     title_ssml = create_ssml_text(chapter_title, is_title=True)
-    title_file = os.path.join(chapter_dir, f'00_title.mp3')
+    title_file = os.path.join(chapter_dir, f"00_title.mp3")
     synthesize_speech(title_ssml, title_file)
-    
+
     # Process content
     audio_segments = [AudioSegment.from_mp3(title_file)]
     chunks = chunk_text(chapter_text)
-    
+
     for i, chunk in enumerate(chunks, 1):
-        chunk_file = os.path.join(chapter_dir, f'{i:02d}_chunk.mp3')
+        chunk_file = os.path.join(chapter_dir, f"{i:02d}_chunk.mp3")
         chunk_ssml = create_ssml_text(chunk)
         if synthesize_speech(chunk_ssml, chunk_file):
             audio_segments.append(AudioSegment.from_mp3(chunk_file))
             audio_segments.append(AudioSegment.silent(duration=500))  # 0.5s gap
-    
+
     # Combine chapter audio
     chapter_audio = sum(audio_segments)
-    chapter_file = os.path.join(output_dir, f'chapter_{chapter_num:02d}.mp3')
-    chapter_audio.export(chapter_file, format='mp3')
+    chapter_file = os.path.join(output_dir, f"chapter_{chapter_num:02d}.mp3")
+    chapter_audio.export(chapter_file, format="mp3")
     return chapter_file
 
-def build_audiobook(pdf_path, output_dir='audiobook_output'):
+
+def build_audiobook(pdf_path, output_dir="audiobook_output"):
     """Main function to build the audiobook"""
     os.makedirs(output_dir, exist_ok=True)
     chapters = extract_chapters_from_pdf(pdf_path)
     chapter_files = []
-    
+
     for i, (title, content) in enumerate(chapters, 1):
         print(f"Processing Chapter {i}: {title}")
         chapter_file = process_chapter(title, content, output_dir, i)
         chapter_files.append(chapter_file)
-    
+
     # Combine all chapters
     final_audio = AudioSegment.empty()
     for file in chapter_files:
         final_audio += AudioSegment.from_mp3(file) + AudioSegment.silent(duration=1000)
-    
-    final_audio.export(os.path.join(output_dir, 'complete_audiobook.mp3'), format='mp3')
+
+    final_audio.export(os.path.join(output_dir, pdf_path.split("/")[-1] + ".mp3"), format="mp3")
     print("Audiobook creation complete!")
 
 
