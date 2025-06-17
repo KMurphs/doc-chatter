@@ -83,6 +83,7 @@ MW_KEY_FILE=~/.ssh/id_ecdsa.pub
 alias km='date && kinit -f && mwinit -o'
 alias km="date && kinit -f && (mwinit --ssh-public-key $MW_KEY_FILE || mwinit --ssh-public-key $MW_KEY_FILE -o)"
 alias km="date && kinit -f && (mwinit --ssh-public-key $MW_KEY_FILE -o)"
+alias mw='date && mwinit -o'
 
 alias akmb='ada credentials update --account=175300657187 --provider=isengard --role=Admin'
 alias akmg='ada credentials update --account=168408843858 --provider=isengard --role=Admin'
@@ -221,3 +222,19 @@ function mcurl() {
     /usr/bin/curl "$@" -L --cookie ~/.midway/cookie --cookie-jar ~/.midway/cookie
 }
 
+function compress_vid() {
+    # https://gist.github.com/SheldonWangRJT/8d3f44a35c8d1386a396b9b49b43c385
+    brew install ffmpeg
+
+    input_file=$1
+
+    # Define the output path in the Downloads folder
+    output_file=~/Downloads/output.mp4
+
+    if [[ -f "$input_file" ]]; then
+        ffmpeg -i "$input_file" -pix_fmt rgb8 -r 10 "/tmp/output.mp4" && ffmpeg -i "/tmp/output.mp4" -vcodec libx264 -acodec aac -pix_fmt yuv420p -movflags +faststart "${output_file}"
+        echo "Compression complete. Mp4 saved to $output_file"
+    else
+        echo "File not found: $input_file"
+    fi
+}
