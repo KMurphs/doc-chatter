@@ -36,6 +36,7 @@ alias bbr='brc brazil-build'
 alias bball='brc --allPackages'
 alias bbb='brc --allPackages brazil-build'
 alias bbra='bbr apollo-pkg'
+alias bballc='printf "%s\n" "bball pwd | xargs -I {} sh -c '\''cd {} && echo \"=== Processing \$(basename {}) ===\" && git pull'\''"'
 
 
 export PATH=$HOME/.toolbox/bin:$PATH
