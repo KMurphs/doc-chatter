@@ -239,3 +239,46 @@ function compress_vid() {
         echo "File not found: $input_file"
     fi
 }
+
+
+# Q CLI agent creation alias
+alias new-q-agent='read -p "Enter agent name: " agent_name && mkdir -p ./.amazonq/cli-agents && cat > ./.amazonq/cli-agents/${agent_name}.json << EOF
+{
+  "name": "${agent_name}",
+  "description": "${agent_name}",
+  "prompt": null,
+  "mcpServers": {
+    "amazon-internal-mcp-server": {
+      "command": "amzn-mcp",
+      "args": [],
+      "disabled": false,
+      "env": {
+        "QUIP_API_TOKEN": "<TokenHere>"
+      },
+      "autoApprove": []
+    }
+  },
+  "tools": [
+    "*"
+  ],
+  "toolAliases": {},
+  "allowedTools": [
+    "fs_read",
+    "fs_write", 
+    "execute_bash",
+    "read_quip"
+  ],
+  "resources": [
+    "file://.amazonq/rules/**/*.md",
+    "file://README.md",
+    "file://AmazonQ.md",
+    "file://DEVELOPMENT.md"
+  ],
+  "hooks": {
+    "agentSpawn": [{"command": "mcp-registry skills inject"}],
+    "userPromptSubmit": []
+  },
+  "toolsSettings": {},
+  "useLegacyMcpJson": true
+}
+EOF'
