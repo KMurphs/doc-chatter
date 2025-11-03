@@ -38,7 +38,6 @@ alias bbb='brc --allPackages brazil-build'
 alias bbra='bbr apollo-pkg'
 alias bballc='printf "%s\n" "bball pwd | xargs -I {} sh -c '\''cd {} && echo \"=== Processing \$(basename {}) ===\" && git pull'\''"'
 
-
 export PATH=$HOME/.toolbox/bin:$PATH
 export PATH=/apollo/env/OdinTools/bin:$PATH
 export PATH=/apollo/env/envImprovement/bin:$PATH
@@ -240,45 +239,17 @@ function compress_vid() {
     fi
 }
 
-
-# Q CLI agent creation alias
-alias new-q-agent='read -p "Enter agent name: " agent_name && mkdir -p ./.amazonq/cli-agents && cat > ./.amazonq/cli-agents/${agent_name}.json << EOF
-{
-  "name": "${agent_name}",
-  "description": "${agent_name}",
-  "prompt": null,
-  "mcpServers": {
-    "amazon-internal-mcp-server": {
-      "command": "amzn-mcp",
-      "args": [],
-      "disabled": false,
-      "env": {
-        "QUIP_API_TOKEN": "<TokenHere>"
-      },
-      "autoApprove": []
-    }
-  },
-  "tools": [
-    "*"
-  ],
-  "toolAliases": {},
-  "allowedTools": [
-    "fs_read",
-    "fs_write", 
-    "execute_bash",
-    "read_quip"
-  ],
-  "resources": [
-    "file://.amazonq/rules/**/*.md",
-    "file://README.md",
-    "file://AmazonQ.md",
-    "file://DEVELOPMENT.md"
-  ],
-  "hooks": {
-    "agentSpawn": [{"command": "mcp-registry skills inject"}],
-    "userPromptSubmit": []
-  },
-  "toolsSettings": {},
-  "useLegacyMcpJson": true
+source /home/kibonges/.brazil_completion/zsh_completion
+export JAVA_HOME="/usr/lib/jvm/java-17-amazon-corretto.x86_64"
+export PATH=$JAVA_HOME/bin:$PATH
+export PATH="$HOME/.sdkman/candidates/kotlin/current/bin:$PATH"
+# mcurl function for Midway authentication
+function mcurl() {
+   /usr/bin/curl "$@" -L --cookie ~/.midway/cookie --cookie-jar ~/.midway/cookie
 }
-EOF'
+
+new-q-agent() {
+  read "agent_name?Enter agent name: "
+  mkdir -p ./.amazonq/cli-agents
+  printf '{"name":"%s","description":"%s","prompt":null,"mcpServers":{"amazon-internal-mcp-server":{"command":"amzn-mcp","args":[],"disabled":false,"env":{"QUIP_API_TOKEN":"YVFIOU1BRW43Z1Y=|1791017846|ztlzOqOt3sxtkT00HROmV7i3gPhwkra+RPuDapX7ZwQ="},"autoApprove":[]}},"tools":["*"],"toolAliases":{},"allowedTools":["fs_read","fs_write","execute_bash","read_quip"],"resources":["file://.amazonq/rules/**/*.md","file://README.md","file://AmazonQ.md","file://DEVELOPMENT.md"],"hooks":{"agentSpawn":[{"command":"mcp-registry skills inject"}],"userPromptSubmit":[]},"toolsSettings":{},"useLegacyMcpJson":true}' "$agent_name" "$agent_name" > ./.amazonq/cli-agents/${agent_name}.json
+}
