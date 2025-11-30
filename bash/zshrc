@@ -253,3 +253,16 @@ new-q-agent() {
   mkdir -p ./.amazonq/cli-agents
   printf '{"name":"%s","description":"%s","prompt":null,"mcpServers":{"amazon-internal-mcp-server":{"command":"amzn-mcp","args":[],"disabled":false,"env":{"QUIP_API_TOKEN":"<YourToken>"},"autoApprove":[]}},"tools":["*"],"toolAliases":{},"allowedTools":["fs_read","fs_write","execute_bash","read_quip"],"resources":["file://.amazonq/rules/**/*.md","file://README.md","file://AmazonQ.md","file://DEVELOPMENT.md"],"hooks":{"agentSpawn":[{"command":"mcp-registry skills inject"}],"userPromptSubmit":[]},"toolsSettings":{},"useLegacyMcpJson":true}' "$agent_name" "$agent_name" > ./.amazonq/cli-agents/${agent_name}.json
 }
+
+code-stats() {
+  local path="${1:-.}"
+  echo "=== Code Statistics for: $path ==="
+  echo ""
+  curl -s https://raw.githubusercontent.com/AlDanial/cloc/master/cloc | perl - "$path"
+  echo ""
+  echo "=== Disk Usage ==="
+  du -sh "$path"
+  echo ""
+  echo "=== Large Files (>100KB) ==="
+  find "$path" -type f -size +100k -exec du -h {} + 2>/dev/null | sort -hr | head -10
+}
