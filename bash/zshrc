@@ -239,6 +239,7 @@ function compress_vid() {
     fi
 }
 
+
 source /home/kibonges/.brazil_completion/zsh_completion
 export JAVA_HOME="/usr/lib/jvm/java-17-amazon-corretto.x86_64"
 export PATH=$JAVA_HOME/bin:$PATH
@@ -266,3 +267,7 @@ code-stats() {
   echo "=== Large Files (>100KB) ==="
   find "$path" -type f -size +100k -exec du -h {} + 2>/dev/null | sort -hr | head -10
 }
+
+
+# kcli: shorthand for kiro-cli, defaults to --agent default
+kcli() { if [ $# -eq 0 ]; then kiro-cli --agent default; else kiro-cli "$@"; fi }
