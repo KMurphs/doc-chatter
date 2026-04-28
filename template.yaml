@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: doc-chatter - Voice-first research paper assistant
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 256
+
+Resources:
+  DocChatterFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: ./lambda
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          RUST_LOG: info
+          DEFAULT_MODEL: sonnet
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource:
+                - "arn:aws:bedrock:*::foundation-model/*"
+                - "arn:aws:bedrock:*:*:inference-profile/*"
+      FunctionUrlConfig:
+        AuthType: NONE
+
+Outputs:
+  FunctionUrl:
+    Description: Lambda Function URL for testing
+    Value: !GetAtt DocChatterFunctionUrl.FunctionUrl

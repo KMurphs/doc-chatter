@@ -1,0 +1,9 @@
+{
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/"
+    }
+  },
+  "body": "{\"paper_text\":\"This study examines the effect of dropout regularization on neural network training. We found that a dropout rate of 0.5 applied to fully connected layers reduced overfitting by 15% on CIFAR-10.\",\"question\":\"What dropout rate did they use?\",\"model\":\"sonnet\"}"
+}
