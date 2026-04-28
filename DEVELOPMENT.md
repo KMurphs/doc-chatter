@@ -152,6 +152,53 @@ sam sync --stack-name doc-chatter --watch
 
 This watches your files and pushes code changes directly to the deployed Lambda in seconds, without a full CloudFormation update. Infrastructure changes (template.yaml) still trigger a full stack update automatically. Much faster than `sam build && sam deploy` when iterating.
 
+### After deploying
+
+The deploy output shows three values:
+
+- **FunctionUrl** — the Lambda Function URL for streaming chat (`/chat`)
+- **ApiUrl** — the API Gateway URL for session management (`/sessions`)
+- **ApiKeyId** — the API key ID (not the value)
+
+To get the API key value:
+
+```bash
+aws apigateway get-api-key --api-key <API_KEY_ID> --include-value --region us-east-1 --query 'value' --output text
+```
+
+Store these in `lambda/.env` for local reference (this file is gitignored):
+
+```
+API_GW_URL=https://<api-id>.execute-api.us-east-1.amazonaws.com/prod
+FUNCTION_URL=https://<function-url>.lambda-url.us-east-1.on.aws/
+API_GW_KEY=<api-key-value>
+```
+
+### Testing the deployed API
+
+```bash
+# Create a session
+curl -s -X POST $API_GW_URL/sessions \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $API_GW_KEY" \
+  -d '{"paper_text":"This study examines the effect of dropout...","title":"Dropout Study"}'
+
+# List sessions
+curl -s $API_GW_URL/sessions -H "x-api-key: $API_GW_KEY"
+
+# Get a session
+curl -s $API_GW_URL/sessions/$SESSION_ID -H "x-api-key: $API_GW_KEY"
+
+# Delete a session
+curl -s -X DELETE $API_GW_URL/sessions/$SESSION_ID -H "x-api-key: $API_GW_KEY"
+
+# Chat (use session_id and token from create response)
+curl -s -X POST $FUNCTION_URL/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"session_id":"$SESSION_ID","question":"What did they find?"}'
+```
+
 ## Logs
 
 ```bash

@@ -2,16 +2,6 @@ use anyhow::Result;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message, SystemContentBlock};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
-pub struct ChatRequest {
-    pub paper_text: String,
-    pub question: String,
-    #[serde(default)]
-    pub history: Vec<Turn>,
-    #[serde(default = "default_model")]
-    pub model: String,
-}
-
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Turn {
     pub role: String,
@@ -23,10 +13,6 @@ pub struct ChatResponse {
     pub answer: String,
 }
 
-fn default_model() -> String {
-    std::env::var("DEFAULT_MODEL").unwrap_or_else(|_| "sonnet".to_string())
-}
-
 pub fn model_id(model: &str) -> &str {
     match model {
         "opus" => "us.anthropic.claude-opus-4-6-v1",
@@ -36,16 +22,10 @@ pub fn model_id(model: &str) -> &str {
     }
 }
 
-pub fn build_system_prompt(paper_text: &str) -> String {
+pub fn build_system_prompt(system_prompt: &str, paper_text: &str) -> String {
     format!(
-        "You are a research paper assistant helping someone who is driving or walking. \
-         They cannot read — they are listening to your responses. \
-         Keep responses concise: short sentences, clear transitions, no bullet points or lists. \
-         Speak naturally as if explaining to a colleague.\n\n\
-         When making claims, reference which part of the paper you are drawing from.\n\
-         If the answer is not in the paper, say so rather than guessing.\n\n\
-         --- PAPER START ---\n{}\n--- PAPER END ---",
-        paper_text
+        "{}\n\n--- PAPER START ---\n{}\n--- PAPER END ---",
+        system_prompt, paper_text
     )
 }
 
@@ -78,16 +58,20 @@ pub fn build_messages(history: &[Turn], question: &str) -> Vec<Message> {
 
 pub async fn invoke_bedrock(
     client: &aws_sdk_bedrockruntime::Client,
-    request: &ChatRequest,
+    model: &str,
+    system_prompt: &str,
+    paper_text: &str,
+    history: &[Turn],
+    question: &str,
 ) -> Result<String> {
-    let system_prompt = build_system_prompt(&request.paper_text);
-    let messages = build_messages(&request.history, &request.question);
-    let mid = model_id(&request.model);
+    let full_system_prompt = build_system_prompt(system_prompt, paper_text);
+    let messages = build_messages(history, question);
+    let mid = model_id(model);
 
     let response = client
         .converse()
         .model_id(mid)
-        .system(SystemContentBlock::Text(system_prompt))
+        .system(SystemContentBlock::Text(full_system_prompt))
         .set_messages(Some(messages))
         .send()
         .await?;

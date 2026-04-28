@@ -8,6 +8,50 @@ Globals:
     MemorySize: 256
 
 Resources:
+  # S3 bucket for session storage
+  SessionsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "doc-chatter-sessions-${AWS::AccountId}"
+
+  # API Gateway REST API with API key
+  DocChatterApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Auth:
+        ApiKeyRequired: true
+
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: DocChatterApiprodStage
+    Properties:
+      Name: doc-chatter-key
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref DocChatterApi
+          StageName: prod
+
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: DocChatterApiprodStage
+    Properties:
+      UsagePlanName: doc-chatter-plan
+      ApiStages:
+        - ApiId: !Ref DocChatterApi
+          Stage: prod
+      Throttle:
+        RateLimit: 10
+        BurstLimit: 20
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # Lambda function
   DocChatterFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -22,6 +66,7 @@ Resources:
         Variables:
           RUST_LOG: info
           DEFAULT_MODEL: sonnet
+          SESSIONS_BUCKET: !Ref SessionsBucket
       Policies:
         - Statement:
             - Effect: Allow
@@ -31,10 +76,59 @@ Resources:
               Resource:
                 - "arn:aws:bedrock:*::foundation-model/*"
                 - "arn:aws:bedrock:*:*:inference-profile/*"
+        - S3CrudPolicy:
+            BucketName: !Ref SessionsBucket
+      Events:
+        CreateSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /sessions
+            Method: POST
+        ListSessions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /sessions
+            Method: GET
+        GetSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /sessions/{id}
+            Method: GET
+        DeleteSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /sessions/{id}
+            Method: DELETE
       FunctionUrlConfig:
         AuthType: NONE
 
+  # Public access permission for Function URL
+  DocChatterFunctionUrlPublicAccess:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DocChatterFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  DocChatterFunctionUrlInvokeAccess:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DocChatterFunction
+      Action: lambda:InvokeFunction
+      Principal: "*"
+
 Outputs:
   FunctionUrl:
-    Description: Lambda Function URL for testing
+    Description: Lambda Function URL (streaming chat)
     Value: !GetAtt DocChatterFunctionUrl.FunctionUrl
+  ApiUrl:
+    Description: API Gateway URL (session management)
+    Value: !Sub "https://${DocChatterApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  ApiKeyId:
+    Description: API Key ID (retrieve value with aws apigateway get-api-key --api-key <id> --include-value)
+    Value: !Ref ApiKey

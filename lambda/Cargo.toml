@@ -16,6 +16,7 @@ lambda_http = "1.0"
 # AWS SDK
 aws-config = "1.0"
 aws-sdk-bedrockruntime = "1.0"
+aws-sdk-s3 = "1.0"
 
 # Async
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -33,6 +34,10 @@ dotenvy = "0.15"
 
 # Error handling
 anyhow = "1.0"
+
+# Utils
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 [profile.release]
 opt-level = "z"
