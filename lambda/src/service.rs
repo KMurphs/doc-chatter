@@ -23,8 +23,6 @@ pub struct CreateSessionRequest {
 #[derive(Serialize)]
 pub struct CreateSessionResponse {
     pub session_id: String,
-    pub token: String,
-    pub token_expiry: chrono::DateTime<Utc>,
 }
 
 #[derive(Serialize)]
@@ -69,11 +67,7 @@ pub async fn create_session(
 
     session::put_session(s3, bucket, &s).await?;
 
-    Ok(CreateSessionResponse {
-        session_id,
-        token,
-        token_expiry,
-    })
+    Ok(CreateSessionResponse { session_id })
 }
 
 pub async fn list_sessions(s3: &aws_sdk_s3::Client, bucket: &str) -> Result<Vec<SessionSummary>> {
@@ -97,16 +91,11 @@ pub async fn chat(
     bedrock_client: &aws_sdk_bedrockruntime::Client,
     bucket: &str,
     session_id: &str,
-    token: &str,
     question: &str,
 ) -> Result<ChatResult> {
     let mut sess = session::get_session(s3, bucket, session_id)
         .await?
         .ok_or_else(|| anyhow::anyhow!("Session not found"))?;
-
-    if !session::validate_token(&sess, token) {
-        return Err(anyhow::anyhow!("Invalid or expired session token"));
-    }
 
     let answer = bedrock::invoke_bedrock(
         bedrock_client,

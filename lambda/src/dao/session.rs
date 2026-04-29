@@ -112,10 +112,6 @@ pub async fn delete_session(s3: &S3Client, bucket: &str, session_id: &str) -> Re
     Ok(())
 }
 
-pub fn validate_token(session: &Session, token: &str) -> bool {
-    session.token == token && session.token_expiry > Utc::now()
-}
-
 impl Session {
     pub fn append_turn(&mut self, question: &str, answer: &str) {
         self.history.push(Turn {

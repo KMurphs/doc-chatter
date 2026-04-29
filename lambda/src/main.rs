@@ -114,18 +114,11 @@ async fn handle_chat(state: &AppState, event: &Request) -> Result<Response<Body>
         Err(resp) => return Ok(resp),
     };
 
-    let token = event
-        .headers()
-        .get("x-session-token")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-
     let result = service::chat(
         &state.s3,
         &state.bedrock,
         &state.bucket,
         &req.session_id,
-        token,
         &req.question,
     )
     .await;

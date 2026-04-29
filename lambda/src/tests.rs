@@ -171,8 +171,6 @@ async fn given_valid_paper_when_create_session_then_returns_201() {
 
     let body: serde_json::Value = serde_json::from_str(&response_body(&resp)).unwrap();
     assert!(body["session_id"].is_string());
-    assert!(body["token"].is_string());
-    assert!(body["token_expiry"].is_string());
     assert_eq!(put.num_calls(), 1);
 }
 
@@ -256,7 +254,7 @@ async fn given_valid_session_when_chat_then_returns_answer() {
         "POST",
         "/chat",
         Some(r#"{"session_id":"sess-1","question":"What was the dropout rate?"}"#),
-        vec![("x-session-token", "tok-1")],
+        vec![],
     );
     let resp = handler(&state, req).await.unwrap();
 
@@ -270,41 +268,6 @@ async fn given_valid_session_when_chat_then_returns_answer() {
 // --- 4xx errors ---
 
 #[tokio::test]
-async fn given_wrong_token_when_chat_then_returns_error() {
-    let session_json = make_session_json("sess-1", "tok-1");
-    let get = mock_get_object(&session_json);
-    let state = make_state_with(vec![&get], vec![]);
-
-    let req = build_request(
-        "POST",
-        "/chat",
-        Some(r#"{"session_id":"sess-1","question":"Q"}"#),
-        vec![("x-session-token", "wrong-token")],
-    );
-    let resp = handler(&state, req).await.unwrap();
-
-    assert_eq!(response_status(&resp), 500);
-    assert!(response_body(&resp).contains("error"));
-}
-
-#[tokio::test]
-async fn given_no_token_when_chat_then_returns_error() {
-    let session_json = make_session_json("sess-1", "tok-1");
-    let get = mock_get_object(&session_json);
-    let state = make_state_with(vec![&get], vec![]);
-
-    let req = build_request(
-        "POST",
-        "/chat",
-        Some(r#"{"session_id":"sess-1","question":"Q"}"#),
-        vec![],
-    );
-    let resp = handler(&state, req).await.unwrap();
-
-    assert_eq!(response_status(&resp), 500);
-}
-
-#[tokio::test]
 async fn given_nonexistent_session_when_chat_then_returns_error() {
     let get = mock_get_object_not_found();
     let state = make_state_with(vec![&get], vec![]);
@@ -313,7 +276,7 @@ async fn given_nonexistent_session_when_chat_then_returns_error() {
         "POST",
         "/chat",
         Some(r#"{"session_id":"nope","question":"Q"}"#),
-        vec![("x-session-token", "tok")],
+        vec![],
     );
     let resp = handler(&state, req).await.unwrap();
 
@@ -433,7 +396,7 @@ async fn given_bedrock_fails_when_chat_then_returns_500() {
         "POST",
         "/chat",
         Some(r#"{"session_id":"sess-1","question":"Q"}"#),
-        vec![("x-session-token", "tok-1")],
+        vec![],
     );
     let resp = handler(&state, req).await.unwrap();
 
