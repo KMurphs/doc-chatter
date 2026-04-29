@@ -1,18 +1,19 @@
-mod bedrock;
-mod session;
+mod config;
+mod dao;
+mod inference;
+mod service;
+mod utils;
 
-use bedrock::{invoke_bedrock, ChatResponse, Turn};
 use lambda_http::{run, service_fn, Body, Error, Request, RequestExt, Response};
-use session::{
-    create_session, delete_session, get_session, list_sessions, put_session,
-    validate_token, CreateSessionRequest,
-};
 use serde::Deserialize;
+use service::CreateSessionRequest;
 use tracing_subscriber::EnvFilter;
+use utils::http::{error_response, parse_json_body, to_response};
 
-struct AppState {
-    bedrock: aws_sdk_bedrockruntime::Client,
-    s3: aws_sdk_s3::Client,
+pub struct AppState {
+    pub bedrock: aws_sdk_bedrockruntime::Client,
+    pub s3: aws_sdk_s3::Client,
+    pub bucket: String,
 }
 
 #[derive(Deserialize)]
@@ -21,169 +22,118 @@ struct ChatRequest {
     question: String,
 }
 
-fn json_response(status: u16, body: &str) -> Response<Body> {
-    Response::builder()
-        .status(status)
-        .header("Content-Type", "application/json")
-        .body(Body::Text(body.to_string()))
-        .unwrap()
-}
-
-fn error_response(status: u16, msg: &str) -> Response<Body> {
-    json_response(status, &format!("{{\"error\":\"{}\"}}", msg))
-}
-
-fn parse_body(event: &Request) -> Option<String> {
-    match event.body() {
-        Body::Text(s) if !s.is_empty() => Some(s.clone()),
-        Body::Binary(b) if !b.is_empty() => Some(String::from_utf8_lossy(b).to_string()),
-        _ => None,
-    }
-}
-
-async fn handler(state: &AppState, event: Request) -> Result<Response<Body>, Error> {
+pub async fn handler(state: &AppState, event: Request) -> Result<Response<Body>, Error> {
     let method = event.method().clone();
-    let path = event.raw_http_path();
+    let raw = event.raw_http_path();
+    let path: &str = if raw.is_empty() {
+        event.uri().path()
+    } else {
+        &raw
+    };
 
-    match (method.as_str(), &*path) {
-        // Session CRUD
+    match (method.as_str(), path) {
         ("POST", "/sessions") => handle_create_session(state, &event).await,
         ("GET", "/sessions") => handle_list_sessions(state).await,
-        ("GET", p) if p.starts_with("/sessions/") => {
-            let id = p.trim_start_matches("/sessions/");
-            handle_get_session(state, id).await
-        }
-        ("DELETE", p) if p.starts_with("/sessions/") => {
-            let id = p.trim_start_matches("/sessions/");
-            handle_delete_session(state, id).await
-        }
-        // Chat (streaming endpoint)
         ("POST", "/chat") => handle_chat(state, &event).await,
+        _ if path.starts_with("/sessions/") => {
+            let id = path.trim_start_matches("/sessions/");
+            match method.as_str() {
+                "GET" => handle_get_session(state, id).await,
+                "DELETE" => handle_delete_session(state, id).await,
+                _ => Ok(error_response(404, "Not found")),
+            }
+        }
         _ => Ok(error_response(404, "Not found")),
     }
 }
 
-async fn handle_create_session(
-    state: &AppState,
-    event: &Request,
-) -> Result<Response<Body>, Error> {
-    let body = match parse_body(event) {
-        Some(b) => b,
-        None => return Ok(error_response(400, "Request body is missing or empty")),
-    };
-
-    let req: CreateSessionRequest = match serde_json::from_str(&body) {
+async fn handle_create_session(state: &AppState, event: &Request) -> Result<Response<Body>, Error> {
+    let req: CreateSessionRequest = match parse_json_body(event) {
         Ok(r) => r,
-        Err(e) => return Ok(error_response(400, &format!("Invalid JSON: {}", e))),
+        Err(resp) => return Ok(resp),
     };
 
-    match create_session(&state.s3, req).await {
-        Ok(resp) => Ok(json_response(201, &serde_json::to_string(&resp)?)),
-        Err(e) => {
-            tracing::error!("Create session error: {:#}", e);
-            Ok(error_response(500, &format!("Failed to create session: {}", e)))
-        }
-    }
+    let result = service::create_session(&state.s3, &state.bucket, req).await;
+    let json = result
+        .as_ref()
+        .ok()
+        .and_then(|r| serde_json::to_string(r).ok());
+    Ok(to_response(
+        result,
+        201,
+        json.as_deref(),
+        "Failed to create session",
+    ))
 }
 
 async fn handle_list_sessions(state: &AppState) -> Result<Response<Body>, Error> {
-    match list_sessions(&state.s3).await {
-        Ok(sessions) => Ok(json_response(200, &serde_json::to_string(&sessions)?)),
-        Err(e) => {
-            tracing::error!("List sessions error: {:?}", e);
-            Ok(error_response(500, "Failed to list sessions"))
-        }
-    }
+    let result = service::list_sessions(&state.s3, &state.bucket).await;
+    let json = result
+        .as_ref()
+        .ok()
+        .and_then(|r| serde_json::to_string(r).ok());
+    Ok(to_response(
+        result,
+        200,
+        json.as_deref(),
+        "Failed to list sessions",
+    ))
 }
 
 async fn handle_get_session(state: &AppState, id: &str) -> Result<Response<Body>, Error> {
-    match get_session(&state.s3, id).await {
-        Ok(Some(session)) => Ok(json_response(200, &serde_json::to_string(&session)?)),
-        Ok(None) => Ok(error_response(404, "Session not found")),
-        Err(e) => {
-            tracing::error!("Get session error: {:?}", e);
-            Ok(error_response(500, "Failed to get session"))
-        }
+    let result = service::get_session(&state.s3, &state.bucket, id).await;
+    match &result {
+        Ok(None) => return Ok(error_response(404, "Session not found")),
+        _ => {}
     }
+    let json = result
+        .as_ref()
+        .ok()
+        .and_then(|r| r.as_ref())
+        .and_then(|r| serde_json::to_string(r).ok());
+    Ok(to_response(
+        result,
+        200,
+        json.as_deref(),
+        "Failed to get session",
+    ))
 }
 
 async fn handle_delete_session(state: &AppState, id: &str) -> Result<Response<Body>, Error> {
-    match delete_session(&state.s3, id).await {
-        Ok(_) => Ok(Response::builder().status(204).body(Body::Empty).unwrap()),
-        Err(e) => {
-            tracing::error!("Delete session error: {:?}", e);
-            Ok(error_response(500, "Failed to delete session"))
-        }
-    }
+    Ok(to_response(
+        service::delete_session(&state.s3, &state.bucket, id).await,
+        204,
+        None,
+        "Failed to delete session",
+    ))
 }
 
 async fn handle_chat(state: &AppState, event: &Request) -> Result<Response<Body>, Error> {
-    let body = match parse_body(event) {
-        Some(b) => b,
-        None => return Ok(error_response(400, "Request body is missing or empty")),
-    };
-
-    let req: ChatRequest = match serde_json::from_str(&body) {
+    let req: ChatRequest = match parse_json_body(event) {
         Ok(r) => r,
-        Err(e) => return Ok(error_response(400, &format!("Invalid JSON: {}", e))),
+        Err(resp) => return Ok(resp),
     };
 
-    // Load session
-    let mut session = match get_session(&state.s3, &req.session_id).await {
-        Ok(Some(s)) => s,
-        Ok(None) => return Ok(error_response(404, "Session not found")),
-        Err(e) => {
-            tracing::error!("Load session error: {:?}", e);
-            return Ok(error_response(500, "Failed to load session"));
-        }
-    };
-
-    // Validate token
     let token = event
         .headers()
         .get("x-session-token")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    if !validate_token(&session, token) {
-        return Ok(error_response(401, "Invalid or expired session token"));
-    }
-
-    // Call Bedrock
-    let answer = match invoke_bedrock(
+    let result = service::chat(
+        &state.s3,
         &state.bedrock,
-        &session.model,
-        &session.system_prompt,
-        &session.paper_text,
-        &session.history,
+        &state.bucket,
+        &req.session_id,
+        token,
         &req.question,
     )
-    .await
-    {
-        Ok(a) => a,
-        Err(e) => {
-            tracing::error!("Bedrock error: {:?}", e);
-            return Ok(error_response(500, &format!("Bedrock error: {}", e)));
-        }
-    };
-
-    // Append turn and save
-    session.history.push(Turn {
-        role: "user".to_string(),
-        content: req.question,
-    });
-    session.history.push(Turn {
-        role: "assistant".to_string(),
-        content: answer.clone(),
-    });
-    session.updated_at = chrono::Utc::now();
-
-    if let Err(e) = put_session(&state.s3, &session).await {
-        tracing::error!("Save session error: {:?}", e);
-    }
-
-    let response = ChatResponse { answer };
-    Ok(json_response(200, &serde_json::to_string(&response)?))
+    .await;
+    let json = result
+        .as_ref()
+        .ok()
+        .and_then(|r| serde_json::to_string(r).ok());
+    Ok(to_response(result, 200, json.as_deref(), "Chat failed"))
 }
 
 #[tokio::main]
@@ -196,9 +146,12 @@ async fn main() -> Result<(), Error> {
         .init();
 
     let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
+    let bucket = std::env::var("SESSIONS_BUCKET").expect("SESSIONS_BUCKET must be set");
+
     let state = AppState {
         bedrock: aws_sdk_bedrockruntime::Client::new(&config),
         s3: aws_sdk_s3::Client::new(&config),
+        bucket,
     };
 
     run(service_fn(|event: Request| async {
@@ -206,3 +159,6 @@ async fn main() -> Result<(), Error> {
     }))
     .await
 }
+
+#[cfg(test)]
+mod tests;

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: doc-chatter - Voice-first research paper assistant
+Description: doc-chatter - Voice-first research paper assistant v2
 
 Globals:
   Function:
@@ -103,24 +103,23 @@ Resources:
             RestApiId: !Ref DocChatterApi
             Path: /sessions/{id}
             Method: DELETE
+        Chat:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /chat
+            Method: POST
       FunctionUrlConfig:
         AuthType: NONE
 
-  # Public access permission for Function URL
-  DocChatterFunctionUrlPublicAccess:
+  # Allow public access to Function URL
+  FunctionUrlPublicAccess:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref DocChatterFunction
       Action: lambda:InvokeFunctionUrl
       Principal: "*"
       FunctionUrlAuthType: NONE
-
-  DocChatterFunctionUrlInvokeAccess:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref DocChatterFunction
-      Action: lambda:InvokeFunction
-      Principal: "*"
 
 Outputs:
   FunctionUrl:

@@ -23,9 +23,11 @@ brew install aws-sam-cli
 
 **AWS credentials:**
 ```bash
-alias akmdev='ada credentials update --account=311371030234 --provider=isengard --role=Admin'
+alias akmdev='ada credentials update --account=311371030234 --provider=isengard --role=Admin --once'
 akmdev   # run before any AWS operation, refresh when expired
 ```
+
+Without `--once`, ada blocks the terminal and waits for the next refresh cycle. The `--once` flag refreshes credentials and exits immediately.
 
 ## Project Structure
 

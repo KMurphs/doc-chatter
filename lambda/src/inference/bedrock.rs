@@ -8,12 +8,7 @@ pub struct Turn {
     pub content: String,
 }
 
-#[derive(Serialize)]
-pub struct ChatResponse {
-    pub answer: String,
-}
-
-pub fn model_id(model: &str) -> &str {
+fn model_id(model: &str) -> &str {
     match model {
         "opus" => "us.anthropic.claude-opus-4-6-v1",
         "sonnet" => "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -22,14 +17,14 @@ pub fn model_id(model: &str) -> &str {
     }
 }
 
-pub fn build_system_prompt(system_prompt: &str, paper_text: &str) -> String {
+fn build_system_prompt(system_prompt: &str, paper_text: &str) -> String {
     format!(
         "{}\n\n--- PAPER START ---\n{}\n--- PAPER END ---",
         system_prompt, paper_text
     )
 }
 
-pub fn build_messages(history: &[Turn], question: &str) -> Vec<Message> {
+fn build_messages(history: &[Turn], question: &str) -> Vec<Message> {
     let mut messages: Vec<Message> = history
         .iter()
         .map(|turn| {

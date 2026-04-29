@@ -193,20 +193,34 @@ What you build:
 - API Gateway REST API with API key auth for session CRUD
 - Session token generation for the streaming endpoint
 
-### Milestone 3 — Minimal web UI
+### Milestone 3 — Cognito auth
 
-Get something on screen. A bare-bones React app that lets you create a session (paste text), pick a model, and type questions in a chat interface. No voice yet — just text in, text out, with streaming responses rendering in real time.
+Replace the API key and custom session token with proper authentication. Cognito handles identity, JWT validation, and token expiry. This needs to happen before the frontend so the UI is built with auth from the start.
 
-Done when: you can open the app in a browser, paste a paper, and have a multi-turn text conversation with streaming responses.
+Done when: all endpoints require a valid Cognito JWT. You can log in via the Hosted UI, get a token, and use it to create sessions and chat. Unauthenticated requests are rejected.
+
+What you build:
+- Cognito User Pool + App Client (add to SAM template)
+- Cognito authorizer on API Gateway (replaces API key)
+- JWT validation in Lambda for Function URL requests
+- Remove API key, usage plan, and custom session token
+- Create your user account
+
+### Milestone 4 — Minimal web UI
+
+Get something on screen. A bare-bones React app that lets you log in via Cognito, create a session (paste text), pick a model, and type questions in a chat interface. No voice yet — just text in, text out, with streaming responses rendering in real time.
+
+Done when: you can open the app in a browser, log in, paste a paper, and have a multi-turn text conversation with streaming responses.
 
 What you build:
 - React + Vite project
 - S3 hosting bucket + CloudFront distribution (add to SAM template)
+- Cognito Hosted UI login flow
 - Session list view, session creation form, chat bubble view
 - Streaming fetch client that reads chunked responses
 - Model selector (Opus / Sonnet / Haiku)
 
-### Milestone 4 — Voice
+### Milestone 5 — Voice
 
 Layer voice on top of the working text chat. Add speech-to-text input, text-to-speech output, and the auto-listen loop.
 
@@ -219,11 +233,11 @@ What you build:
 - Primary view (big mic button + status indicator)
 - Push-to-talk fallback
 
-### Milestone 5 — Polish and security hardening
+### Milestone 6 — Polish
 
-Make it safe to leave running. Add all the security layers, the expertise-adaptive system prompt, PDF upload, and the editable prompt UI.
+Make it safe to leave running. Add remaining security layers, the expertise-adaptive system prompt, PDF upload, and the editable prompt UI.
 
-Done when: the app is fully functional with all Phase 1 features, protected against abuse, and you're comfortable leaving it deployed.
+Done when: the app is fully functional with all Phase 1 features and you're comfortable leaving it deployed.
 
 What you build:
 - CloudFront OAC on the Function URL

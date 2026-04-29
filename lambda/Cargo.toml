@@ -39,6 +39,13 @@ anyhow = "1.0"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 
+[dev-dependencies]
+aws-smithy-mocks = "0.2"
+aws-smithy-runtime-api = "1.0"
+aws-smithy-types = "1.0"
+aws-sdk-s3 = { version = "1.0", features = ["test-util"] }
+aws-sdk-bedrockruntime = { version = "1.0", features = ["test-util"] }
+
 [profile.release]
 opt-level = "z"
 lto = true
