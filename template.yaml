@@ -2,6 +2,16 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: doc-chatter - Voice-first research paper assistant
 
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, alpha, prod]
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+  IsDev: !Equals [!Ref Stage, dev]
+
 Globals:
   Function:
     Timeout: 120
@@ -114,10 +124,14 @@ Resources:
       StageName: prod
       Auth:
         DefaultAuthorizer: AWS_IAM
+        AddDefaultAuthorizerToCorsPreflight: false
       Cors:
         AllowMethods: "'GET,POST,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Stream-Token'"
+        AllowOrigin: !If
+          - IsProd
+          - "'https://CLOUDFRONT_DOMAIN_HERE'"
+          - "'http://localhost:5174'"
 
   # ============================================================
   # LAMBDA

@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Light mode (default) */
+body {
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
+/* Dark mode */
+.dark body, body.dark {
+  background: #1c1c1e;
+  color: #f0f0f0;
+}
+
+::selection {
+  background: rgba(13, 148, 136, 0.25);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: #38383c; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 3px; }

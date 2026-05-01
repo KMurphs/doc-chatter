@@ -22,3 +22,5 @@ samconfig.toml
 
 # Build
 build/
+
+.playwright-mcp

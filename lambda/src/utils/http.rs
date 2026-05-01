@@ -4,6 +4,8 @@ pub fn json_response(status: u16, body: &str) -> Response<Body> {
     Response::builder()
         .status(status)
         .header("Content-Type", "application/json")
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token,X-Amz-Content-Sha256")
         .body(Body::Text(body.to_string()))
         .unwrap()
 }
@@ -23,6 +25,7 @@ pub fn to_response<T, E: std::fmt::Debug>(
             Some(json) => json_response(ok_status, json),
             None => Response::builder()
                 .status(ok_status)
+                .header("Access-Control-Allow-Origin", "*")
                 .body(Body::Empty)
                 .unwrap(),
         },
