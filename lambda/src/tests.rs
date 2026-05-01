@@ -11,6 +11,7 @@ use aws_sdk_s3::types::Object;
 use aws_smithy_mocks::{mock, mock_client, RuleMode};
 use lambda_http::{Body, Request};
 
+use crate::auth;
 use crate::{handler, AppState};
 
 // --- Helpers ---
@@ -134,22 +135,29 @@ fn mock_converse_error() -> aws_smithy_mocks::Rule {
     })
 }
 
-fn make_state_with(
+fn make_state(
     s3_rules: Vec<&aws_smithy_mocks::Rule>,
     bedrock_rules: Vec<&aws_smithy_mocks::Rule>,
 ) -> AppState {
-    let s3 = mock_client!(aws_sdk_s3, RuleMode::MatchAny, s3_rules);
-    let bedrock = if bedrock_rules.is_empty() {
-        let noop = mock_converse("unused");
-        mock_client!(aws_sdk_bedrockruntime, [&noop])
-    } else {
-        mock_client!(aws_sdk_bedrockruntime, RuleMode::MatchAny, bedrock_rules)
-    };
-    AppState {
-        s3,
-        bedrock,
-        bucket: "test-bucket".to_string(),
+    {
+        let s3 = mock_client!(aws_sdk_s3, RuleMode::MatchAny, s3_rules);
+        let bedrock = if bedrock_rules.is_empty() {
+            let noop = mock_converse("unused");
+            mock_client!(aws_sdk_bedrockruntime, [&noop])
+        } else {
+            mock_client!(aws_sdk_bedrockruntime, RuleMode::MatchAny, bedrock_rules)
+        };
+        AppState {
+            s3,
+            bedrock,
+            bucket: "test-bucket".to_string(),
+        }
     }
+}
+
+fn stream_token_for(session_id: &str) -> String {
+    std::env::set_var("STREAM_TOKEN_SECRET", "test-secret");
+    auth::generate_stream_token("test-user", session_id).token
 }
 
 // --- Happy path: Sessions ---
@@ -157,7 +165,7 @@ fn make_state_with(
 #[tokio::test]
 async fn given_valid_paper_when_create_session_then_returns_201() {
     let put = mock_put_object();
-    let state = make_state_with(vec![&put], vec![]);
+    let state = make_state(vec![&put], vec![]);
 
     let req = build_request(
         "POST",
@@ -177,7 +185,7 @@ async fn given_valid_paper_when_create_session_then_returns_201() {
 #[tokio::test]
 async fn given_no_sessions_when_list_then_returns_empty_array() {
     let list = mock_list_objects_empty();
-    let state = make_state_with(vec![&list], vec![]);
+    let state = make_state(vec![&list], vec![]);
 
     let req = build_request("GET", "/sessions", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -191,7 +199,7 @@ async fn given_session_exists_when_list_then_returns_session() {
     let session_json = make_session_json("sess-1", "tok-1");
     let list = mock_list_objects(vec!["sessions/sess-1.json"]);
     let get = mock_get_object(&session_json);
-    let state = make_state_with(vec![&list, &get], vec![]);
+    let state = make_state(vec![&list, &get], vec![]);
 
     let req = build_request("GET", "/sessions", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -206,7 +214,7 @@ async fn given_session_exists_when_list_then_returns_session() {
 async fn given_session_exists_when_get_then_returns_full_session() {
     let session_json = make_session_json("sess-1", "tok-1");
     let get = mock_get_object(&session_json);
-    let state = make_state_with(vec![&get], vec![]);
+    let state = make_state(vec![&get], vec![]);
 
     let req = build_request("GET", "/sessions/sess-1", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -220,7 +228,7 @@ async fn given_session_exists_when_get_then_returns_full_session() {
 #[tokio::test]
 async fn given_no_session_when_get_then_returns_404() {
     let get = mock_get_object_not_found();
-    let state = make_state_with(vec![&get], vec![]);
+    let state = make_state(vec![&get], vec![]);
 
     let req = build_request("GET", "/sessions/nonexistent", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -231,7 +239,7 @@ async fn given_no_session_when_get_then_returns_404() {
 #[tokio::test]
 async fn given_session_exists_when_delete_then_returns_204() {
     let del = mock_delete_object();
-    let state = make_state_with(vec![&del], vec![]);
+    let state = make_state(vec![&del], vec![]);
 
     let req = build_request("DELETE", "/sessions/sess-1", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -244,17 +252,18 @@ async fn given_session_exists_when_delete_then_returns_204() {
 
 #[tokio::test]
 async fn given_valid_session_when_chat_then_returns_answer() {
-    let session_json = r#"{"session_id":"sess-1","title":"Test","paper_text":"test paper","history":[{"role":"user","content":"What is this about?"},{"role":"assistant","content":"It is about dropout."}],"model":"sonnet","system_prompt":"prompt","subject_expertise":"medium","research_expertise":"medium","token":"tok-1","token_expiry":"2099-01-01T00:00:00Z","created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}"#;
+    let session_json = r#"{"session_id":"sess-1","title":"Test","paper_text":"test paper","history":[{"role":"user","content":"What is this about?"},{"role":"assistant","content":"It is about dropout."}],"model":"sonnet","system_prompt":"prompt","subject_expertise":"medium","research_expertise":"medium","token":"","token_expiry":"2026-01-01T00:00:00Z","created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}"#;
     let get = mock_get_object(session_json);
     let put = mock_put_object();
     let converse = mock_converse("The dropout rate was 0.5");
-    let state = make_state_with(vec![&get, &put], vec![&converse]);
+    let state = make_state(vec![&get, &put], vec![&converse]);
+    let token = stream_token_for("sess-1");
 
     let req = build_request(
         "POST",
         "/chat",
         Some(r#"{"session_id":"sess-1","question":"What was the dropout rate?"}"#),
-        vec![],
+        vec![("x-stream-token", &token)],
     );
     let resp = handler(&state, req).await.unwrap();
 
@@ -262,7 +271,7 @@ async fn given_valid_session_when_chat_then_returns_answer() {
     let body: serde_json::Value = serde_json::from_str(&response_body(&resp)).unwrap();
     assert_eq!(body["answer"], "The dropout rate was 0.5");
     assert_eq!(converse.num_calls(), 1);
-    assert_eq!(put.num_calls(), 1); // session saved with updated history
+    assert_eq!(put.num_calls(), 1);
 }
 
 // --- 4xx errors ---
@@ -270,13 +279,14 @@ async fn given_valid_session_when_chat_then_returns_answer() {
 #[tokio::test]
 async fn given_nonexistent_session_when_chat_then_returns_error() {
     let get = mock_get_object_not_found();
-    let state = make_state_with(vec![&get], vec![]);
+    let state = make_state(vec![&get], vec![]);
+    let token = stream_token_for("nope");
 
     let req = build_request(
         "POST",
         "/chat",
         Some(r#"{"session_id":"nope","question":"Q"}"#),
-        vec![],
+        vec![("x-stream-token", &token)],
     );
     let resp = handler(&state, req).await.unwrap();
 
@@ -285,7 +295,7 @@ async fn given_nonexistent_session_when_chat_then_returns_error() {
 
 #[tokio::test]
 async fn given_invalid_json_when_create_session_then_returns_400() {
-    let state = make_state_with(vec![], vec![]);
+    let state = make_state(vec![], vec![]);
     let req = build_request("POST", "/sessions", Some("not json"), vec![]);
 
     let resp = handler(&state, req).await.unwrap();
@@ -294,7 +304,7 @@ async fn given_invalid_json_when_create_session_then_returns_400() {
 
 #[tokio::test]
 async fn given_empty_body_when_create_session_then_returns_400() {
-    let state = make_state_with(vec![], vec![]);
+    let state = make_state(vec![], vec![]);
     let req = build_request("POST", "/sessions", None, vec![]);
 
     let resp = handler(&state, req).await.unwrap();
@@ -302,17 +312,17 @@ async fn given_empty_body_when_create_session_then_returns_400() {
 }
 
 #[tokio::test]
-async fn given_invalid_json_when_chat_then_returns_400() {
-    let state = make_state_with(vec![], vec![]);
+async fn given_no_body_when_chat_then_returns_401_missing_token() {
+    let state = make_state(vec![], vec![]);
     let req = build_request("POST", "/chat", Some("not json"), vec![]);
 
     let resp = handler(&state, req).await.unwrap();
-    assert_eq!(response_status(&resp), 400);
+    assert_eq!(response_status(&resp), 401);
 }
 
 #[tokio::test]
 async fn given_unknown_path_when_request_then_returns_404() {
-    let state = make_state_with(vec![], vec![]);
+    let state = make_state(vec![], vec![]);
     let req = build_request("GET", "/unknown", None, vec![]);
 
     let resp = handler(&state, req).await.unwrap();
@@ -324,7 +334,7 @@ async fn given_unknown_path_when_request_then_returns_404() {
 #[tokio::test]
 async fn given_s3_put_fails_when_create_session_then_returns_500() {
     let put = mock_s3_error_500();
-    let state = make_state_with(vec![&put], vec![]);
+    let state = make_state(vec![&put], vec![]);
 
     let req = build_request(
         "POST",
@@ -345,7 +355,7 @@ async fn given_s3_list_fails_when_list_sessions_then_returns_500() {
             aws_smithy_types::body::SdkBody::from("error"),
         )
     });
-    let state = make_state_with(vec![&list], vec![]);
+    let state = make_state(vec![&list], vec![]);
 
     let req = build_request("GET", "/sessions", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -361,7 +371,7 @@ async fn given_s3_get_fails_when_get_session_then_returns_500() {
             aws_smithy_types::body::SdkBody::from("error"),
         )
     });
-    let state = make_state_with(vec![&get], vec![]);
+    let state = make_state(vec![&get], vec![]);
 
     let req = build_request("GET", "/sessions/some-id", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -377,7 +387,7 @@ async fn given_s3_delete_fails_when_delete_session_then_returns_500() {
             aws_smithy_types::body::SdkBody::from("error"),
         )
     });
-    let state = make_state_with(vec![&del], vec![]);
+    let state = make_state(vec![&del], vec![]);
 
     let req = build_request("DELETE", "/sessions/some-id", None, vec![]);
     let resp = handler(&state, req).await.unwrap();
@@ -387,16 +397,17 @@ async fn given_s3_delete_fails_when_delete_session_then_returns_500() {
 
 #[tokio::test]
 async fn given_bedrock_fails_when_chat_then_returns_500() {
-    let session_json = make_session_json("sess-1", "tok-1");
+    let session_json = make_session_json("sess-1", "");
     let get = mock_get_object(&session_json);
     let converse = mock_converse_error();
-    let state = make_state_with(vec![&get], vec![&converse]);
+    let state = make_state(vec![&get], vec![&converse]);
+    let token = stream_token_for("sess-1");
 
     let req = build_request(
         "POST",
         "/chat",
         Some(r#"{"session_id":"sess-1","question":"Q"}"#),
-        vec![],
+        vec![("x-stream-token", &token)],
     );
     let resp = handler(&state, req).await.unwrap();
 

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -46,8 +46,6 @@ pub async fn create_session(
 ) -> Result<CreateSessionResponse> {
     let now = Utc::now();
     let session_id = Uuid::new_v4().to_string();
-    let token = Uuid::new_v4().to_string();
-    let token_expiry = now + Duration::hours(24);
     let title = req.title.unwrap_or_else(|| generate_title(&req.paper_text));
 
     let s = Session {
@@ -59,8 +57,8 @@ pub async fn create_session(
         system_prompt: req.system_prompt.unwrap_or_else(default_system_prompt),
         subject_expertise: req.subject_expertise,
         research_expertise: req.research_expertise,
-        token: token.clone(),
-        token_expiry,
+        token: String::new(),
+        token_expiry: now,
         created_at: now,
         updated_at: now,
     };

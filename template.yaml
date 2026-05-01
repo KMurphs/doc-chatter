@@ -4,195 +4,142 @@ Description: doc-chatter - Voice-first research paper assistant
 
 Globals:
   Function:
-    Timeout: 120       # Lambda max execution time in seconds (Bedrock calls can be slow)
-    MemorySize: 256    # MB of RAM allocated to the Lambda
+    Timeout: 120
+    MemorySize: 256
 
 Resources:
 
   # ============================================================
-  # COGNITO — manages user authentication and JWT token issuance
+  # COGNITO USER POOL — user directory, issues JWTs on login
   # ============================================================
 
-  # The User Pool is a user directory. It stores usernames (emails),
-  # passwords, and handles login. When a user logs in, Cognito issues
-  # a JWT (JSON Web Token) that proves their identity.
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: doc-chatter-users
-
-      # Users sign up and log in with their email address (not a separate username).
-      # Options: email | phone_number | (both). We use email only.
       UsernameAttributes:
         - email
-
-      # When a user signs up, Cognito automatically marks these as verified
-      # (skips the verification email/SMS step). This means the email doesn't
-      # need to be real — no verification code is sent. That's fine here because
-      # we create users manually via admin_create_user, not self-service sign-up.
-      # Remove this to force email verification (Cognito sends a code).
-      # Options: email | phone_number | (both). We auto-verify email.
       AutoVerifiedAttributes:
         - email
-
-      # Password requirements. Only minimum length is set; Cognito defaults
-      # also require uppercase, lowercase, numbers, and symbols.
-      # All options: MinimumLength, RequireUppercase, RequireLowercase,
-      # RequireNumbers, RequireSymbols, TemporaryPasswordValidityDays.
-      # Docs: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cognito-userpool-passwordpolicy.html
       Policies:
         PasswordPolicy:
           MinimumLength: 8
 
-  # The App Client is how our web app talks to the User Pool.
-  # It defines which authentication flows are allowed and where
-  # Cognito should redirect after login.
+  # App Client — how the web app authenticates with the User Pool.
+  # No OAuth/Hosted UI config needed since we use Identity Pool for all API access.
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       ClientName: doc-chatter-web
       UserPoolId: !Ref UserPool
-
-      # Don't generate a client secret. Client secrets are for server-side apps
-      # that can store them safely. Browser/SPA apps can't hide secrets in
-      # JavaScript, so Cognito authenticates using only the client ID (public)
-      # plus the user's credentials. Set to true only for backend-to-Cognito flows.
       GenerateSecret: false
-
-      # Programmatic auth flows — how code (scripts, backends) authenticates
-      # directly with Cognito's API (InitiateAuth / AdminInitiateAuth).
       ExplicitAuthFlows:
-        # SRP (Secure Remote Password) — the standard browser login flow.
-        # Password never leaves the client; only a proof is sent.
         - ALLOW_USER_SRP_AUTH
-
-        # Direct username+password auth — sends password over HTTPS to Cognito.
-        # Simpler than SRP but less secure (password leaves the client).
-        # Used by our get-token.sh script for CLI testing.
-        # TODO: disable in production — use SRP or Hosted UI only.
+        # TODO: disable in production — use SRP only.
         - ALLOW_USER_PASSWORD_AUTH
-
-        # Allow refreshing expired tokens without re-entering credentials.
         - ALLOW_REFRESH_TOKEN_AUTH
 
-      # Browser auth flow — how the Hosted UI (Cognito's login page) delivers
-      # tokens back to the app after login via redirect.
-      # "implicit" returns tokens directly in the URL fragment (#id_token=xxx).
-      # Simple for SPAs. The alternative ("code") is more secure but needs
-      # a backend to exchange the code for tokens.
-      AllowedOAuthFlows:
-        - implicit
-      AllowedOAuthFlowsUserPoolClient: true  # required to enable OAuth flows
+  # ============================================================
+  # COGNITO IDENTITY POOL — bridges JWT to temporary AWS credentials
+  # ============================================================
 
-      # What information the token contains:
-      # - openid: standard identity claims (sub, email, etc.)
-      # - email: include the user's email in the token
-      AllowedOAuthScopes:
-        - openid
-        - email
-
-      # Where Cognito redirects after successful login.
-      # Must match exactly — Cognito rejects mismatches.
-      # localhost:5173 is Vite's dev server. Add the production
-      # CloudFront URL here when the frontend is deployed.
-      CallbackURLs:
-        - http://localhost:5173/callback
-
-      # Where Cognito redirects after logout.
-      LogoutURLs:
-        - http://localhost:5173/
-
-      # Which identity providers are available on the login page.
-      # COGNITO means the built-in email+password login.
-      # Could add Google, Facebook, SAML, etc. here later.
-      SupportedIdentityProviders:
-        - COGNITO
-
-  # The domain gives Cognito a URL for its Hosted UI (login page).
-  # The login page will be at:
-  #   https://doc-chatter-<account-id>.auth.<region>.amazoncognito.com/login
-  # This is a pre-built login page — no frontend code needed.
-  UserPoolDomain:
-    Type: AWS::Cognito::UserPoolDomain
+  # After logging in via the User Pool (JWT), the client exchanges the JWT
+  # for temporary AWS credentials. These credentials are scoped to the
+  # authenticated role below, which only allows invoking our endpoints.
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
     Properties:
-      Domain: !Sub "doc-chatter-${AWS::AccountId}"
-      UserPoolId: !Ref UserPool
+      IdentityPoolName: doc-chatter-identity
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  # IAM role for authenticated users. Permissions:
+  # - Invoke the Function URL (lambda:InvokeFunctionUrl)
+  # - Call API Gateway endpoints (execute-api:Invoke)
+  IdentityPoolAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": authenticated
+      Policies:
+        - PolicyName: InvokeApis
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunctionUrl
+                Resource: !GetAtt DocChatterFunction.Arn
+              - Effect: Allow
+                Action: execute-api:Invoke
+                Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DocChatterApi}/*"
+
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt IdentityPoolAuthRole.Arn
 
   # ============================================================
   # S3 — session storage
   # ============================================================
 
-  # Stores session JSON files (paper text, conversation history, config).
-  # One file per session at sessions/<session-id>.json.
   SessionsBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "doc-chatter-sessions-${AWS::AccountId}"
 
   # ============================================================
-  # API GATEWAY — HTTP endpoint with Cognito authentication
+  # API GATEWAY — REST endpoints with IAM auth
   # ============================================================
 
-  # API Gateway sits in front of the Lambda and handles:
-  # 1. Routing (path + method → Lambda)
-  # 2. Authentication (validates JWT before request reaches Lambda)
-  # 3. CORS (allows browser requests from different origins)
+  # All endpoints require SigV4-signed requests (IAM auth).
+  # The client gets temporary AWS credentials from the Identity Pool
+  # and signs every request. No Cognito authorizer needed.
   DocChatterApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
-
       Auth:
-        # Every endpoint requires a valid Cognito JWT by default.
-        # API Gateway validates the token automatically — if invalid,
-        # the request gets a 401 and never reaches the Lambda.
-        DefaultAuthorizer: CognitoAuthorizer
-        Authorizers:
-          CognitoAuthorizer:
-            # Points the authorizer at our User Pool. API Gateway
-            # fetches Cognito's public keys and uses them to verify
-            # JWT signatures. No Lambda code needed for this.
-            UserPoolArn: !GetAtt UserPool.Arn
-
-      # CORS headers — required for the browser to call the API
-      # from a different origin (e.g., localhost:5173 or CloudFront).
-      # Without this, browsers block the requests.
+        DefaultAuthorizer: AWS_IAM
       Cors:
         AllowMethods: "'GET,POST,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"  # restrict to specific origin in production
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
 
   # ============================================================
-  # LAMBDA — the application code
+  # LAMBDA
   # ============================================================
 
   DocChatterFunction:
     Type: AWS::Serverless::Function
     Metadata:
-      # Tells SAM to build the Rust code using cargo-lambda.
-      # SAM runs `cargo lambda build --release` and packages the binary.
       BuildMethod: rust-cargolambda
     Properties:
-      CodeUri: ./lambda           # path to the Rust project
-      Handler: bootstrap          # binary name (AWS custom runtime convention)
-      Runtime: provided.al2023    # custom runtime on Amazon Linux 2023
+      CodeUri: ./lambda
+      Handler: bootstrap
+      Runtime: provided.al2023
       Architectures:
-        - arm64                   # Graviton — cheaper and faster than x86
-
+        - arm64
       Environment:
         Variables:
           RUST_LOG: info
           DEFAULT_MODEL: sonnet
-          SESSIONS_BUCKET: !Ref SessionsBucket          # injected at deploy time
-          COGNITO_USER_POOL_ID: !Ref UserPool            # for future JWT validation
-          COGNITO_CLIENT_ID: !Ref UserPoolClient         # for future JWT validation
-          COGNITO_REGION: !Ref AWS::Region
-
-      # IAM permissions granted to the Lambda
+          SESSIONS_BUCKET: !Ref SessionsBucket
+          STREAM_TOKEN_SECRET: !Sub "doc-chatter-${AWS::AccountId}-stream-secret"
       Policies:
-        # Allow calling Bedrock models (both regular and streaming).
-        # Two resource patterns because cross-region model IDs (us.anthropic.*)
-        # use "inference-profile" ARNs, not "foundation-model" ARNs.
         - Statement:
             - Effect: Allow
               Action:
@@ -201,13 +148,8 @@ Resources:
               Resource:
                 - "arn:aws:bedrock:*::foundation-model/*"
                 - "arn:aws:bedrock:*:*:inference-profile/*"
-        # Allow read/write/delete on the sessions S3 bucket.
-        # SAM shorthand — expands to GetObject, PutObject, DeleteObject, ListBucket.
         - S3CrudPolicy:
             BucketName: !Ref SessionsBucket
-
-      # Each event wires an API Gateway route to this Lambda.
-      # All routes share the same Lambda — routing happens in main.rs.
       Events:
         CreateSession:
           Type: Api
@@ -215,45 +157,65 @@ Resources:
             RestApiId: !Ref DocChatterApi
             Path: /sessions
             Method: POST
+            Auth:
+              AuthorizationType: AWS_IAM
         ListSessions:
           Type: Api
           Properties:
             RestApiId: !Ref DocChatterApi
             Path: /sessions
             Method: GET
+            Auth:
+              AuthorizationType: AWS_IAM
         GetSession:
           Type: Api
           Properties:
             RestApiId: !Ref DocChatterApi
             Path: /sessions/{id}
             Method: GET
+            Auth:
+              AuthorizationType: AWS_IAM
         DeleteSession:
           Type: Api
           Properties:
             RestApiId: !Ref DocChatterApi
             Path: /sessions/{id}
             Method: DELETE
+            Auth:
+              AuthorizationType: AWS_IAM
         Chat:
           Type: Api
           Properties:
             RestApiId: !Ref DocChatterApi
             Path: /chat
             Method: POST
-
-# ============================================================
-# OUTPUTS — values printed after deploy, used in .env and scripts
-# ============================================================
+            Auth:
+              AuthorizationType: AWS_IAM
+        StreamToken:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /sessions/{id}/stream-token
+            Method: POST
+            Auth:
+              AuthorizationType: AWS_IAM
+      # Function URL with IAM auth for streaming.
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
 
 Outputs:
+  FunctionUrl:
+    Description: Lambda Function URL (IAM auth, for streaming)
+    Value: !GetAtt DocChatterFunctionUrl.FunctionUrl
   ApiUrl:
-    Description: API Gateway URL (all endpoints)
+    Description: API Gateway URL (IAM auth)
     Value: !Sub "https://${DocChatterApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
   UserPoolId:
-    Description: Cognito User Pool ID (needed for create-user.sh and .env)
+    Description: Cognito User Pool ID
     Value: !Ref UserPool
   UserPoolClientId:
-    Description: Cognito App Client ID (needed for get-token.sh and .env)
+    Description: Cognito App Client ID
     Value: !Ref UserPoolClient
-  CognitoDomain:
-    Description: Cognito Hosted UI login page URL
-    Value: !Sub "https://doc-chatter-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com"
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value: !Ref IdentityPool

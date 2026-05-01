@@ -36,8 +36,10 @@ dotenvy = "0.15"
 anyhow = "1.0"
 
 # Auth
-jsonwebtoken = "9"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+aes-gcm = "0.10"
+base64 = "0.22"
+rand = "0.8"
+sha2 = "0.10"
 
 # Utils
 uuid = { version = "1", features = ["v4"] }
