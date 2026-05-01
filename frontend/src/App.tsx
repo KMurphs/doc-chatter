@@ -6,13 +6,14 @@ import { Sidebar } from './components/Sidebar';
 import { EmptyPage } from './pages/EmptyPage';
 import { NewSessionPage } from './pages/NewSessionPage';
 import { ChatPage } from './pages/ChatPage';
+import { EditSessionPage } from './pages/EditSessionPage';
 import { LoginPage } from './pages/LoginPage';
 
 function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
   return (
     <button
       onClick={onToggle}
-      className="fixed bottom-4 right-4 z-50 w-9 h-9 rounded-full flex items-center justify-center text-sm
+      className="fixed bottom-4 right-4 z-40 w-9 h-9 rounded-full flex items-center justify-center text-sm
         bg-light-surface-alt dark:bg-dark-surface-alt
         border border-light-border dark:border-dark-border
         text-light-text-secondary dark:text-dark-text-secondary
@@ -91,6 +92,7 @@ function AppLayout() {
             <Route path="/" element={<EmptyPage />} />
             <Route path="/sessions/new" element={<NewSessionPage />} />
             <Route path="/sessions/:id" element={<ChatPage />} />
+            <Route path="/sessions/:id/edit" element={<EditSessionPage />} />
           </Routes>
         </div>
 

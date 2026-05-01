@@ -126,7 +126,7 @@ Resources:
         DefaultAuthorizer: AWS_IAM
         AddDefaultAuthorizerToCorsPreflight: false
       Cors:
-        AllowMethods: "'GET,POST,DELETE,OPTIONS'"
+        AllowMethods: "'GET,POST,PATCH,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Stream-Token'"
         AllowOrigin: !If
           - IsProd
@@ -195,6 +195,14 @@ Resources:
             RestApiId: !Ref DocChatterApi
             Path: /sessions/{id}
             Method: DELETE
+            Auth:
+              AuthorizationType: AWS_IAM
+        UpdateSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DocChatterApi
+            Path: /sessions/{id}
+            Method: PATCH
             Auth:
               AuthorizationType: AWS_IAM
         Chat:

@@ -30,6 +30,15 @@ pub struct ChatResult {
     pub answer: String,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateSessionRequest {
+    pub model: Option<String>,
+    pub system_prompt: Option<String>,
+    pub subject_expertise: Option<String>,
+    pub research_expertise: Option<String>,
+    pub title: Option<String>,
+}
+
 fn generate_title(paper_text: &str) -> String {
     paper_text
         .chars()
@@ -82,6 +91,37 @@ pub async fn get_session(
 
 pub async fn delete_session(s3: &aws_sdk_s3::Client, bucket: &str, id: &str) -> Result<()> {
     session::delete_session(s3, bucket, id).await
+}
+
+pub async fn update_session(
+    s3: &aws_sdk_s3::Client,
+    bucket: &str,
+    id: &str,
+    req: UpdateSessionRequest,
+) -> Result<Session> {
+    let mut sess = session::get_session(s3, bucket, id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Session not found"))?;
+
+    if let Some(model) = req.model {
+        sess.model = model;
+    }
+    if let Some(prompt) = req.system_prompt {
+        sess.system_prompt = prompt;
+    }
+    if let Some(exp) = req.subject_expertise {
+        sess.subject_expertise = exp;
+    }
+    if let Some(exp) = req.research_expertise {
+        sess.research_expertise = exp;
+    }
+    if let Some(title) = req.title {
+        sess.title = title;
+    }
+    sess.updated_at = Utc::now();
+
+    session::put_session(s3, bucket, &sess).await?;
+    Ok(sess)
 }
 
 pub async fn chat(

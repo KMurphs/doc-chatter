@@ -48,6 +48,7 @@ pub async fn handler(state: &AppState, event: Request) -> Result<Response<Body>,
             match method.as_str() {
                 "GET" => handle_get_session(state, id).await,
                 "DELETE" => handle_delete_session(state, id).await,
+                "PATCH" => handle_update_session(state, &event, id).await,
                 _ => Ok(error_response(404, "Not found")),
             }
         }
@@ -113,6 +114,29 @@ async fn handle_delete_session(state: &AppState, id: &str) -> Result<Response<Bo
         204,
         None,
         "Failed to delete session",
+    ))
+}
+
+async fn handle_update_session(
+    state: &AppState,
+    event: &Request,
+    id: &str,
+) -> Result<Response<Body>, Error> {
+    let req: service::UpdateSessionRequest = match parse_json_body(event) {
+        Ok(r) => r,
+        Err(resp) => return Ok(resp),
+    };
+
+    let result = service::update_session(&state.s3, &state.bucket, id, req).await;
+    let json = result
+        .as_ref()
+        .ok()
+        .and_then(|r| serde_json::to_string(r).ok());
+    Ok(to_response(
+        result,
+        200,
+        json.as_deref(),
+        "Failed to update session",
     ))
 }
 

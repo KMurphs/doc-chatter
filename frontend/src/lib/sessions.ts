@@ -61,6 +61,23 @@ export async function deleteSession(creds: Credentials, id: string): Promise<voi
   if (!res.ok) throw new Error('Failed to delete session');
 }
 
+export interface UpdateSessionRequest {
+  model?: string;
+  system_prompt?: string;
+  subject_expertise?: string;
+  research_expertise?: string;
+  title?: string;
+}
+
+export async function updateSession(creds: Credentials, id: string, req: UpdateSessionRequest): Promise<SessionDetail> {
+  const res = await signedFetch(`/sessions/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(req),
+  }, creds);
+  if (!res.ok) throw new Error('Failed to update session');
+  return res.json();
+}
+
 export async function chat(creds: Credentials, sessionId: string, question: string, streamToken?: string): Promise<{ answer: string }> {
   const headers: Record<string, string> = {};
   if (streamToken) headers['x-stream-token'] = streamToken;

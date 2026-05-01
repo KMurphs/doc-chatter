@@ -5,7 +5,10 @@ pub fn json_response(status: u16, body: &str) -> Response<Body> {
         .status(status)
         .header("Content-Type", "application/json")
         .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token,X-Amz-Content-Sha256")
+        .header(
+            "Access-Control-Allow-Headers",
+            "Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token,X-Amz-Content-Sha256",
+        )
         .body(Body::Text(body.to_string()))
         .unwrap()
 }
