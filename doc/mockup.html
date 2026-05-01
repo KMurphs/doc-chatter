@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>doc-chatter — Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; height: 100vh; overflow: hidden; }
+
+  /* Desktop layout: sidebar + main */
+  .app { display: flex; height: 100vh; }
+  .sidebar { width: 320px; border-right: 1px solid #2a2a3e; display: flex; flex-direction: column; background: #0f0f0f; flex-shrink: 0; }
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* Mobile: hide sidebar, show as full screen */
+  @media (max-width: 639px) {
+    .sidebar { width: 100%; position: absolute; z-index: 10; }
+    .sidebar.hidden { display: none; }
+    .main { width: 100%; }
+    .main.hidden { display: none; }
+  }
+
+  /* Shared */
+  .header { padding: 16px; background: #1a1a2e; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2a2a3e; flex-shrink: 0; }
+  .header h1 { font-size: 18px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header .back { cursor: pointer; font-size: 20px; display: none; }
+  .header .action { cursor: pointer; background: #4a6cf7; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
+  .header .icon-btn { cursor: pointer; background: none; border: none; font-size: 20px; }
+  @media (max-width: 639px) { .header .back { display: block; } }
+
+  /* Session List */
+  .session-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .session-card { background: #1a1a2e; border-radius: 12px; padding: 14px; margin: 6px 0; cursor: pointer; border: 1px solid #2a2a3e; }
+  .session-card:hover, .session-card.active { border-color: #4a6cf7; }
+  .session-card .title { font-size: 15px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .session-card .meta { font-size: 11px; color: #888; display: flex; gap: 10px; flex-wrap: wrap; }
+  .model-badge { background: #2a2a3e; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+
+  /* Panel (right side content) */
+  .panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
+  .panel.active { display: flex; }
+
+  /* Empty state for desktop */
+  .empty-main { flex: 1; display: flex; align-items: center; justify-content: center; color: #444; font-size: 16px; }
+
+  /* Forms */
+  .form { flex: 1; overflow-y: auto; padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; }
+  .form label { display: block; font-size: 13px; color: #888; margin: 16px 0 6px; }
+  .form label:first-child { margin-top: 0; }
+  .form textarea { width: 100%; height: 200px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; color: #e0e0e0; font-size: 14px; resize: vertical; }
+  .form input[type=text] { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; color: #e0e0e0; font-size: 14px; }
+  .form .upload-btn { display: inline-block; background: #2a2a3e; border: 1px dashed #4a6cf7; border-radius: 8px; padding: 12px 20px; cursor: pointer; font-size: 14px; color: #4a6cf7; margin-top: 8px; }
+  .form .row { display: flex; gap: 12px; }
+  .form select { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; color: #e0e0e0; font-size: 14px; }
+  .model-toggle { display: flex; gap: 0; margin-top: 6px; }
+  .model-toggle button { flex: 1; padding: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #888; font-size: 13px; cursor: pointer; }
+  .model-toggle button:first-child { border-radius: 8px 0 0 8px; }
+  .model-toggle button:last-child { border-radius: 0 8px 8px 0; }
+  .model-toggle button.selected { background: #4a6cf7; color: white; border-color: #4a6cf7; }
+  .form .start-btn { width: 100%; margin-top: 24px; padding: 14px; background: #4a6cf7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+  /* Chat */
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+  @media (max-width: 639px) { .bubble { max-width: 85%; } }
+  .bubble.user { align-self: flex-end; background: #4a6cf7; color: white; border-bottom-right-radius: 4px; }
+  .bubble.assistant { align-self: flex-start; background: #1a1a2e; border: 1px solid #2a2a3e; border-bottom-left-radius: 4px; }
+  .bubble .thinking { color: #888; font-style: italic; }
+  .chat-input { display: flex; gap: 8px; padding: 12px 16px; background: #1a1a2e; border-top: 1px solid #2a2a3e; flex-shrink: 0; }
+  .chat-input input { flex: 1; background: #0f0f0f; border: 1px solid #2a2a3e; border-radius: 20px; padding: 10px 16px; color: #e0e0e0; font-size: 14px; }
+  .chat-input .send { background: #4a6cf7; border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 18px; flex-shrink: 0; }
+
+  /* Voice */
+  .voice-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+  .mic-btn { width: 120px; height: 120px; border-radius: 50%; background: #4a6cf7; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 48px; box-shadow: 0 0 40px rgba(74, 108, 247, 0.3); }
+  .mic-btn.listening { background: #e74c3c; animation: pulse 1.5s infinite; }
+  .mic-btn.thinking { background: #f39c12; }
+  .mic-btn.speaking { background: #2ecc71; }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 40px rgba(231, 76, 60, 0.3); } 50% { box-shadow: 0 0 60px rgba(231, 76, 60, 0.6); } }
+  .status-text { font-size: 16px; color: #888; }
+  .current-response { font-size: 14px; color: #aaa; text-align: center; padding: 0 32px; max-height: 60px; overflow: hidden; }
+
+  /* Tab bar */
+  .tab-bar { display: flex; border-top: 1px solid #2a2a3e; background: #1a1a2e; flex-shrink: 0; }
+  .tab-bar button { flex: 1; padding: 12px; background: none; border: none; color: #666; font-size: 12px; cursor: pointer; }
+  .tab-bar button.active { color: #4a6cf7; }
+
+  /* Stats */
+  .detail { flex: 1; overflow-y: auto; padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; }
+  .stat-section { margin-bottom: 20px; }
+  .stat-section h2 { font-size: 14px; color: #4a6cf7; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1a1a2e; }
+  .stat-row .label { color: #888; font-size: 13px; }
+  .stat-row .value { font-size: 13px; font-weight: 500; }
+  .score-bar { height: 8px; background: #2a2a3e; border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .score-bar .fill { height: 100%; border-radius: 4px; }
+  .score-card { background: #1a1a2e; border-radius: 12px; padding: 16px; margin-top: 8px; border: 1px solid #2a2a3e; }
+  .score-card .score-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .score-card .score-value { font-size: 24px; font-weight: 700; }
+  .score-card .score-detail { font-size: 12px; color: #888; margin-top: 4px; }
+
+  /* Config */
+  .config-section { margin-bottom: 24px; }
+  .config-section h2 { font-size: 14px; color: #4a6cf7; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .config-item { background: #1a1a2e; border-radius: 8px; padding: 14px; margin-bottom: 8px; border: 1px solid #2a2a3e; }
+  .config-item .config-label { font-size: 13px; color: #888; margin-bottom: 6px; }
+  .config-item .config-value { font-size: 14px; }
+  .prompt-preview { font-size: 12px; color: #aaa; line-height: 1.5; max-height: 80px; overflow: hidden; margin-top: 6px; padding: 8px; background: #0f0f0f; border-radius: 4px; }
+  .edit-btn { background: none; border: 1px solid #2a2a3e; color: #4a6cf7; padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 8px; }
+  .danger-btn { width: 100%; padding: 12px; background: none; border: 1px solid #e74c3c; color: #e74c3c; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar: always visible on desktop, toggleable on mobile -->
+  <div class="sidebar" id="sidebar">
+    <div class="header">
+      <h1>📄 doc-chatter</h1>
+      <button class="action" onclick="showPanel('new')">+ New</button>
+    </div>
+    <div class="session-list">
+      <div class="session-card active" onclick="showPanel('chat')">
+        <div class="title">Dropout Regularization Study</div>
+        <div class="meta">
+          <span class="model-badge">Balanced</span>
+          <span>2 turns</span>
+          <span>~4.2k tokens</span>
+          <span>5 min ago</span>
+        </div>
+      </div>
+      <div class="session-card" onclick="showPanel('chat')">
+        <div class="title">Attention Is All You Need</div>
+        <div class="meta">
+          <span class="model-badge">Deep</span>
+          <span>8 turns</span>
+          <span>~18k tokens</span>
+          <span>2 hours ago</span>
+        </div>
+      </div>
+      <div class="session-card" onclick="showPanel('chat')">
+        <div class="title">BERT: Pre-training of Deep Bidirectional...</div>
+        <div class="meta">
+          <span class="model-badge">Fast</span>
+          <span>0 turns</span>
+          <span>~6.1k tokens</span>
+          <span>yesterday</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content area -->
+  <div class="main" id="main">
+
+    <!-- Empty state (desktop only) -->
+    <div class="panel active" id="panel-empty">
+      <div class="empty-main">Select a session or create a new one</div>
+    </div>
+
+    <!-- New Session -->
+    <div class="panel" id="panel-new">
+      <div class="header">
+        <span class="back" onclick="showPanel('empty')">←</span>
+        <h1>New Session</h1>
+      </div>
+      <div class="form">
+        <label>Paper text</label>
+        <textarea placeholder="Paste the paper text here..."></textarea>
+        <div class="upload-btn">📎 Upload PDF</div>
+        <label>Title (optional)</label>
+        <input type="text" placeholder="Auto-generated from paper">
+        <label>Model</label>
+        <div class="model-toggle">
+          <button>Deep</button>
+          <button class="selected">Balanced</button>
+          <button>Fast</button>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Subject expertise</label>
+            <select><option>Low</option><option selected>Medium</option><option>High</option></select>
+          </div>
+          <div style="flex:1">
+            <label>Research expertise</label>
+            <select><option>Low</option><option selected>Medium</option><option>High</option></select>
+          </div>
+        </div>
+        <button class="start-btn" onclick="showPanel('chat')">Start Session</button>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="panel" id="panel-chat">
+      <div class="header">
+        <span class="back" onclick="showPanel('empty')">←</span>
+        <h1>Dropout Study</h1>
+        <button class="icon-btn" onclick="showPanel('stats')">📊</button>
+        <button class="icon-btn" onclick="showPanel('config')">⚙️</button>
+      </div>
+      <div class="chat-messages">
+        <div class="bubble user">What dropout rate did they use?</div>
+        <div class="bubble assistant">The authors used a dropout rate of 0.5 applied to fully connected layers. According to the paper, this reduced overfitting by 15 percent on CIFAR-10.</div>
+        <div class="bubble user">Why did the benefit diminish in deeper networks?</div>
+        <div class="bubble assistant">The paper suggests that batch normalization in deeper networks provides overlapping regularization effects. So when you already have batch norm, adding dropout doesn't help as much because both techniques are addressing similar issues with training stability and overfitting.</div>
+        <div class="bubble user">How does this compare to other regularization techniques?</div>
+        <div class="bubble assistant"><span class="thinking">Thinking...</span></div>
+      </div>
+      <div class="chat-input">
+        <input type="text" placeholder="Ask about the paper...">
+        <button class="send">↑</button>
+      </div>
+      <div class="tab-bar">
+        <button onclick="showPanel('voice')">🎤 Voice</button>
+        <button class="active">💬 Chat</button>
+      </div>
+    </div>
+
+    <!-- Voice -->
+    <div class="panel" id="panel-voice">
+      <div class="header">
+        <span class="back" onclick="showPanel('empty')">←</span>
+        <h1>Dropout Study</h1>
+        <button class="icon-btn" onclick="showPanel('stats')">📊</button>
+        <button class="icon-btn" onclick="showPanel('config')">⚙️</button>
+      </div>
+      <div class="voice-view">
+        <div class="status-text">Tap to start listening</div>
+        <button class="mic-btn" onclick="cycleMic(this)">🎤</button>
+        <div class="current-response"></div>
+      </div>
+      <div class="tab-bar">
+        <button class="active">🎤 Voice</button>
+        <button onclick="showPanel('chat')">💬 Chat</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="panel" id="panel-stats">
+      <div class="header">
+        <span class="back" onclick="showPanel('chat')">←</span>
+        <h1>Session Stats</h1>
+      </div>
+      <div class="detail">
+        <div class="stat-section">
+          <h2>Comprehension Score</h2>
+          <div class="score-card">
+            <div class="score-label">How well you're tracking the paper</div>
+            <div class="score-value" style="color: #2ecc71;">72%</div>
+            <div class="score-bar"><div class="fill" style="width:72%; background:#2ecc71;"></div></div>
+            <div class="score-detail">Based on question depth, coverage of key sections, and follow-up quality. You've covered methods and results but haven't explored the discussion section yet.</div>
+          </div>
+        </div>
+        <div class="stat-section">
+          <h2>Paper</h2>
+          <div class="stat-row"><span class="label">Title</span><span class="value">Dropout Regularization Study</span></div>
+          <div class="stat-row"><span class="label">Paper size</span><span class="value">~6,200 tokens</span></div>
+          <div class="stat-row"><span class="label">Estimated pages</span><span class="value">~8 pages</span></div>
+        </div>
+        <div class="stat-section">
+          <h2>Conversation</h2>
+          <div class="stat-row"><span class="label">Turns</span><span class="value">3 Q&A</span></div>
+          <div class="stat-row"><span class="label">Total tokens used</span><span class="value">4,218</span></div>
+          <div class="stat-row"><span class="label">Input tokens</span><span class="value">3,842</span></div>
+          <div class="stat-row"><span class="label">Output tokens</span><span class="value">376</span></div>
+        </div>
+        <div class="stat-section">
+          <h2>Cost</h2>
+          <div class="stat-row"><span class="label">Model</span><span class="value">Claude Sonnet 4.5</span></div>
+          <div class="stat-row"><span class="label">This session</span><span class="value">$0.013</span></div>
+          <div class="stat-row"><span class="label">Avg per turn</span><span class="value">$0.004</span></div>
+        </div>
+        <div class="stat-section">
+          <h2>Dates</h2>
+          <div class="stat-row"><span class="label">Created</span><span class="value">May 1, 2026 3:12 PM</span></div>
+          <div class="stat-row"><span class="label">Last active</span><span class="value">May 1, 2026 3:18 PM</span></div>
+          <div class="stat-row"><span class="label">Duration</span><span class="value">6 min</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config -->
+    <div class="panel" id="panel-config">
+      <div class="header">
+        <span class="back" onclick="showPanel('chat')">←</span>
+        <h1>Session Config</h1>
+      </div>
+      <div class="detail">
+        <div class="config-section">
+          <h2>Model</h2>
+          <div class="model-toggle">
+            <button>Deep</button>
+            <button class="selected">Balanced</button>
+            <button>Fast</button>
+          </div>
+        </div>
+        <div class="config-section">
+          <h2>Expertise</h2>
+          <div class="form row" style="padding:0">
+            <div style="flex:1">
+              <label style="margin-top:0">Subject</label>
+              <select><option>Low</option><option selected>Medium</option><option>High</option></select>
+            </div>
+            <div style="flex:1">
+              <label style="margin-top:0">Research</label>
+              <select><option>Low</option><option selected>Medium</option><option>High</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="config-section">
+          <h2>System Prompt</h2>
+          <div class="config-item">
+            <div class="prompt-preview">You are a research paper assistant helping someone who is driving or walking. They cannot read — they are listening to your responses. Keep responses concise: short sentences, clear transitions, no bullet points or lists...</div>
+            <button class="edit-btn" onclick="showPanel('prompt')">✏️ Edit prompt</button>
+          </div>
+        </div>
+        <div class="config-section">
+          <h2>Paper</h2>
+          <div class="config-item">
+            <div class="config-label">Title</div>
+            <div class="config-value">Dropout Regularization Study</div>
+          </div>
+          <div class="config-item">
+            <div class="config-label">Size</div>
+            <div class="config-value">~6,200 tokens (~8 pages)</div>
+          </div>
+        </div>
+        <div class="config-section">
+          <h2>Danger Zone</h2>
+          <button class="danger-btn" onclick="showPanel('empty')">🗑 Delete Session</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Prompt -->
+    <div class="panel" id="panel-prompt">
+      <div class="header">
+        <span class="back" onclick="showPanel('config')">←</span>
+        <h1>System Prompt</h1>
+        <button class="action">Save</button>
+      </div>
+      <div class="form" style="padding-top:8px; max-width:100%;">
+        <textarea style="height: calc(100vh - 120px); font-size: 13px; line-height: 1.6;">You are a research paper assistant helping someone who is driving or walking. They cannot read — they are listening to your responses. Keep responses concise: short sentences, clear transitions, no bullet points or lists. Speak naturally as if explaining to a colleague.
+
+When making claims, reference which part of the paper you are drawing from.
+If the answer is not in the paper, say so rather than guessing.
+
+The user has MEDIUM subject expertise and MEDIUM research expertise. Adjust your explanations accordingly — define specialized terms but don't over-explain standard concepts.</textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const isMobile = () => window.innerWidth < 640;
+
+function showPanel(name) {
+  // Hide all panels
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  // Show target
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+
+  // Mobile: toggle sidebar vs main
+  if (isMobile()) {
+    if (name === 'empty') {
+      document.getElementById('sidebar').classList.remove('hidden');
+      document.getElementById('main').classList.add('hidden');
+    } else {
+      document.getElementById('sidebar').classList.add('hidden');
+      document.getElementById('main').classList.remove('hidden');
+    }
+  }
+
+  // Highlight active session card
+  if (name === 'chat' || name === 'voice') {
+    document.querySelectorAll('.session-card').forEach((c, i) => {
+      c.classList.toggle('active', i === 0);
+    });
+  }
+}
+
+// On desktop, clicking a session shows chat; on mobile, hides sidebar
+document.querySelectorAll('.session-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.session-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    showPanel('chat');
+  });
+});
+
+// Mic states
+let micState = 0;
+const states = [
+  { cls: '', text: 'Tap to start listening', response: '' },
+  { cls: 'listening', text: 'Listening...', response: '' },
+  { cls: 'thinking', text: 'Thinking...', response: '' },
+  { cls: 'speaking', text: 'Speaking...', response: 'The paper suggests that batch normalization provides overlapping regularization...' },
+];
+function cycleMic(btn) {
+  micState = (micState + 1) % states.length;
+  const s = states[micState];
+  btn.className = 'mic-btn ' + s.cls;
+  btn.closest('.voice-view').querySelector('.status-text').textContent = s.text;
+  btn.closest('.voice-view').querySelector('.current-response').textContent = s.response;
+}
+
+// Model toggles
+document.querySelectorAll('.model-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+});
+
+// Init: on mobile show sidebar, on desktop show empty
+if (isMobile()) {
+  document.getElementById('main').classList.add('hidden');
+} else {
+  showPanel('chat');
+}
+</script>
+</body>
+</html>

@@ -208,17 +208,64 @@ What you build:
 
 ### Milestone 4 — Minimal web UI
 
-Get something on screen. A bare-bones React app that lets you log in via Cognito, create a session (paste text), pick a model, and type questions in a chat interface. No voice yet — just text in, text out, with streaming responses rendering in real time.
+Get something on screen. A React PWA that lets you log in via Cognito, create sessions, and have text conversations with the paper. No voice yet — text in, text out. Responsive: sidebar + main panel on desktop, full-screen navigation on mobile.
 
-Done when: you can open the app in a browser, log in, paste a paper, and have a multi-turn text conversation with streaming responses.
+Done when: you can open the app in a browser and on your phone, log in, paste a paper, and have a multi-turn text conversation.
 
-What you build:
-- React + Vite project
-- S3 hosting bucket + CloudFront distribution (add to SAM template)
-- Cognito Hosted UI login flow
-- Session list view, session creation form, chat bubble view
-- Streaming fetch client that reads chunked responses
-- Model selector (Opus / Sonnet / Haiku)
+Tech: React + Vite + TypeScript, Tailwind CSS, Shadcn/ui components.
+
+Screens (see doc/mockup.html):
+- Session list (home) — sidebar on desktop, full screen on mobile
+- New session — paste text or upload PDF, model selector, expertise dropdowns
+- Chat — bubble UI with text input
+- Config — model, expertise, system prompt editor
+- Stats — token counts, cost, dates, comprehension score
+
+Build steps:
+
+**Step 1 — Scaffold + routing**
+- Vite + React + TypeScript project in `frontend/`
+- Tailwind + Shadcn/ui setup
+- React Router: `/`, `/sessions/new`, `/sessions/:id`
+- Responsive shell: sidebar + main panel layout
+- Hardcoded mock data, no API calls
+
+**Step 2 — Auth**
+- AWS Amplify Auth library (auth module only)
+- Login: Cognito → Identity Pool → temp AWS credentials
+- SigV4 signing utility for API calls
+- Protected routes — redirect to login if unauthenticated
+- Silent token refresh (Amplify handles this automatically)
+- Logout button
+
+**Step 3 — Session CRUD**
+- API client with SigV4 signing
+- Session list, create, detail, delete — wired to real API
+- PDF upload with client-side text extraction (pdf.js)
+- Loading states on all API calls (spinners, skeleton cards)
+- Error handling: toast notifications on failure, inline errors on forms
+
+**Step 4 — Chat**
+- Chat view with bubbles
+- Text input → POST /chat via API Gateway
+- Stream token fetch from /sessions/:id/stream-token
+- Multi-turn conversation with history
+- "Thinking..." indicator while waiting for response
+
+**Step 5 — Config + Stats**
+- Config panel: model toggle, expertise, system prompt editor
+- Backend: add PATCH /sessions/:id endpoint for updating config
+- Stats panel: tokens, cost, dates
+- Comprehension score deferred to Milestone 6 (needs prompt engineering + backend)
+
+**Step 6 — Deploy**
+- S3 bucket + CloudFront in SAM template
+- Build + sync to S3
+- Add CloudFront URL to Cognito callback URLs
+
+**Step 7 — PWA**
+- Service worker, web app manifest
+- Add to home screen on Android
 
 ### Milestone 5 — Voice
 
