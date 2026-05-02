@@ -280,7 +280,55 @@ What you build:
 - Primary view (big mic button + status indicator)
 - Push-to-talk fallback
 
-### Milestone 6 — Polish
+### Milestone 6 — Local-first storage and provider abstraction
+
+Decouple the app from the AWS backend for everything except chat inference. Sessions are stored locally by default. Chat goes through a pluggable provider interface.
+
+The vision: no need to host user data. The backend exists only for inference. Users can point the app at any compatible endpoint.
+
+Done when: the app works fully offline for session management, and chat works with either our backend or a user-provided endpoint.
+
+**Step 1 — Chat provider abstraction** (`lib/chat-provider.ts`)
+- Interface: `chat(session: SessionDetail, question: string) → Promise<string>`
+- **Token+URL provider** (default): POST to user-provided URL with token in Authorization header. Sends `{ session_id, question }` body. Works with our backend, OpenAI-compatible APIs, or any custom endpoint.
+- **Bedrock provider**: direct Bedrock `InvokeModel` call. User provides AWS credentials (access key, secret key, session token), region, and model ID. Builds the full prompt from session context locally — no backend needed.
+- Provider config stored in AppSettings (localStorage).
+
+**Step 2 — Local session storage** (`lib/local-sessions.ts`)
+- IndexedDB-backed CRUD: `localListSessions`, `localGetSession`, `localCreateSession`, `localUpdateSession`, `localDeleteSession`, `localAppendHistory`
+- Same data model as remote sessions (SessionDetail)
+- No size limits (IndexedDB supports hundreds of MB, unlike localStorage's 5MB)
+- Session IDs generated client-side via `crypto.randomUUID()`
+
+**Step 3 — Session service refactor** (`lib/sessions.ts`)
+- Reads `storageMode` from AppSettings (`'local'` | `'remote'`)
+- Routes all CRUD calls to either local (IndexedDB) or remote (API Gateway) implementation
+- Chat calls routed through the selected provider
+- Transparent to the rest of the app — components don't know which backend they're using
+
+**Step 4 — AppSettings updates** (`lib/app-settings.tsx`)
+- New fields:
+  - `storageMode: 'local' | 'remote'` (default: `'local'`)
+  - `chatProvider: 'token-url' | 'bedrock'` (default: `'token-url'`)
+  - Token+URL fields: `providerUrl`, `providerToken`
+  - Bedrock fields: `awsAccessKey`, `awsSecretKey`, `awsSessionToken`, `awsRegion`, `bedrockModelId`
+
+**Step 5 — Advanced settings UI** (`components/AppSettingsPanel.tsx`)
+- New "Advanced" section in the settings modal
+- Storage mode toggle: Local (default) / Remote
+- Chat provider dropdown: Token+URL / Bedrock
+- Dynamic form fields based on selected provider:
+  - Token+URL: URL input, Token input
+  - Bedrock: Access Key, Secret Key, Session Token, Region, Model ID
+- Remote mode shows Cognito login fields (existing auth flow)
+
+**Step 6 — Wire ChatPage and remove hard dependencies**
+- Remove direct dependency on `signedFetch` / Cognito for CRUD when in local mode
+- Chat calls go through provider abstraction
+- Local mode: no login required for CRUD, only provider needs config
+- Remote mode: existing Cognito flow unchanged
+
+### Milestone 7 — Polish
 
 Make it safe to leave running. Add remaining security layers, the expertise-adaptive system prompt, PDF upload, and the editable prompt UI.
 
