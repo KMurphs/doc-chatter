@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { getSession, chat, getStreamToken, SessionDetail } from '../lib/sessions';
-import { useSessions } from '../lib/sessions-context';
 import { useSpeech, VoiceMode } from '../lib/use-speech';
 import { useSidebar } from '../App';
+import { useVoiceSettings } from '../lib/voice-settings';
+import { VoiceSettingsPanel } from '../components/VoiceSettingsPanel';
 
 // --- Mic button ---
 function MicButton({ listening, speaking, sending, size, onClick }: {
@@ -46,16 +47,20 @@ function StatusLabel({ listening, speaking, sending }: { listening: boolean; spe
 }
 
 // --- Mic panel (shared between desktop left panel and eyes-off) ---
-function MicPanel({ listening, speaking, sending, size, onMicTap, onStopSpeaking, voiceMode, onVoiceModeChange }: {
+function MicPanel({ listening, speaking, sending, size, onMicTap, onStopSpeaking, voiceMode, onVoiceModeChange, onSettings }: {
   listening: boolean; speaking: boolean; sending: boolean; size: 'lg' | 'xl';
   onMicTap: () => void; onStopSpeaking: () => void;
   voiceMode: VoiceMode; onVoiceModeChange: (m: VoiceMode) => void;
+  onSettings: () => void;
 }) {
   return (
     <div className="flex flex-col items-center gap-5">
       <MicButton listening={listening} speaking={speaking} sending={sending} size={size} onClick={onMicTap} />
       <div className="text-xs"><StatusLabel listening={listening} speaking={speaking} sending={sending} /></div>
-      <VoiceModeToggle mode={voiceMode} onChange={onVoiceModeChange} />
+      <div className="flex items-center gap-2">
+        <VoiceModeToggle mode={voiceMode} onChange={onVoiceModeChange} />
+        <button onClick={onSettings} className="text-[10px] px-2 py-1 rounded-lg border border-light-border dark:border-dark-border text-light-muted dark:text-dark-muted hover:text-accent transition-colors">⚙️</button>
+      </div>
       {speaking && (
         <button onClick={onStopSpeaking} className="text-xs text-light-muted dark:text-dark-muted hover:text-accent">Stop</button>
       )}
@@ -100,9 +105,7 @@ function ChatTranscript({ history, sending, speaking, supported, speak, messages
 // --- Main ChatPage ---
 export function ChatPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { getCredentials } = useAuth();
-  const { removeSession } = useSessions();
   const { openSidebar } = useSidebar();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [input, setInput] = useState('');
@@ -111,17 +114,26 @@ export function ChatPage() {
   const [error, setError] = useState('');
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('tap');
   const [view, setView] = useState<'chat' | 'eyes-off'>('chat');
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const messagesEnd = useRef<HTMLDivElement>(null);
   const lastInputWasVoice = useRef(false);
+  const { settings, update: updateSettings } = useVoiceSettings();
 
-  const handleVoiceResult = useCallback((text: string) => {
+  const handleTranscript = useCallback((text: string) => {
+    setInput(text);
+  }, []);
+
+  const handleFinalResult = useCallback((text: string) => {
     lastInputWasVoice.current = true;
+    setInput('');
     sendText(text);
   }, []);
 
   const { listening, speaking, supported, startListening, stopListening, speak, stopSpeaking } = useSpeech({
-    onResult: handleVoiceResult,
+    onTranscript: handleTranscript,
+    onFinalResult: handleFinalResult,
     voiceMode,
+    settings,
   });
 
   useEffect(() => { if (id) loadSession(); }, [id]);
@@ -133,7 +145,7 @@ export function ChatPage() {
       const creds = await getCredentials();
       if (!creds || !id) return;
       setSession(await getSession(creds, id));
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to load'); }
     finally { setLoading(false); }
   }
 
@@ -152,8 +164,8 @@ export function ChatPage() {
       const res = await chat(creds, id, question, st.token);
       setSession(prev => prev ? { ...prev, history: [...prev.history, { role: 'assistant', content: res.answer }] } : prev);
       if (wasVoice) speak(res.answer);
-    } catch (e: any) {
-      setError(e.message || 'Chat failed');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Chat failed');
       setSession(prev => prev ? { ...prev, history: prev.history.slice(0, -1) } : prev);
     } finally { setSending(false); }
   }
@@ -188,7 +200,7 @@ export function ChatPage() {
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <MicPanel listening={listening} speaking={speaking} sending={sending} size="xl"
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
-            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} />
+            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowVoiceSettings(true)} />
         </div>
         {error && <div className="px-4 py-2 text-sm text-red-500 text-center shrink-0">{error}</div>}
         <div className="pb-4 px-4 flex justify-center shrink-0">
@@ -197,6 +209,7 @@ export function ChatPage() {
             💬
           </button>
         </div>
+        {showVoiceSettings && <VoiceSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowVoiceSettings(false)} />}
       </div>
     );
   }
@@ -234,9 +247,10 @@ export function ChatPage() {
         <div className="hidden lg:flex w-80 shrink-0 flex-col items-center justify-center border-l border-light-border dark:border-dark-border bg-light-surface dark:bg-dark-surface">
           <MicPanel listening={listening} speaking={speaking} sending={sending} size="lg"
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
-            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} />
+            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowVoiceSettings(true)} />
         </div>
       </div>
+      {showVoiceSettings && <VoiceSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowVoiceSettings(false)} />}
     </div>
   );
 }

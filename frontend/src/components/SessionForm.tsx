@@ -33,8 +33,8 @@ export function SessionForm({ initial, onSubmit, submitLabel, hidePaper }: Props
     setLoading(true);
     try {
       await onSubmit(form);
-    } catch (e: any) {
-      setError(e.message || 'Something went wrong');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }

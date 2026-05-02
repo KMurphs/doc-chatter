@@ -6,7 +6,6 @@ import { getSession, SessionDetail } from '../lib/sessions';
 import { useAuth } from '../lib/auth';
 
 const modelLabels: Record<string, string> = { opus: 'Deep', sonnet: 'Balanced', haiku: 'Fast' };
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function Sidebar({ onNavigate, activeSessionId }: { onNavigate?: () => void; activeSessionId?: string }) {
   const { sessions, loading, refresh } = useSessions();

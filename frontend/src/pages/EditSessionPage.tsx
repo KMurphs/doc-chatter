@@ -5,14 +5,11 @@ import { getSession, updateSession, deleteSession, SessionDetail } from '../lib/
 import { useSessions } from '../lib/sessions-context';
 import { SessionForm, SessionFormData } from '../components/SessionForm';
 
-import { useSidebar } from '../App';
-
 export function EditSessionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getCredentials } = useAuth();
   const { refresh, removeSession } = useSessions();
-  const { openSidebar } = useSidebar();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -23,7 +20,7 @@ export function EditSessionPage() {
         const creds = await getCredentials();
         if (!creds || !id) return;
         setSession(await getSession(creds, id));
-      } catch {}
+      } catch { /* ignore */ }
       finally { setLoading(false); }
     })();
   }, [id]);
@@ -49,7 +46,7 @@ export function EditSessionPage() {
     try {
       const creds = await getCredentials();
       if (creds) await deleteSession(creds, id);
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   if (loading) return <div className="flex-1 flex items-center justify-center"><span className="text-sm text-light-muted dark:text-dark-muted">Loading...</span></div>;

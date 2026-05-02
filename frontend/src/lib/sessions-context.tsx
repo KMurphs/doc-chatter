@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { useAuth } from './auth';
-import { listSessions, deleteSession as apiDeleteSession, createSession as apiCreateSession, SessionSummary, CreateSessionRequest } from './sessions';
+import { listSessions, SessionSummary } from './sessions';
 
 interface SessionsState {
   sessions: SessionSummary[];
