@@ -94,7 +94,7 @@ function ChatTranscript({ history, sending, speaking, supported, speak, messages
         )}
         {history.map((turn, i) => (
           <div key={i} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`text-sm leading-relaxed whitespace-pre-wrap ${
+            <div className={`text-sm leading-relaxed ${!renderMarkdown ? 'whitespace-pre-wrap' : ''} ${
               turn.role === 'user'
                 ? 'bg-accent/10 dark:bg-accent/15 text-light-text-primary dark:text-dark-text-primary rounded-2xl rounded-br-md px-4 py-3 max-w-[80%]'
                 : 'text-light-text-primary dark:text-dark-text-primary max-w-full'
