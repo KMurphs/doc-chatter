@@ -105,7 +105,7 @@ export function Sidebar({ onNavigate, activeSessionId }: { onNavigate?: () => vo
                     )}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-[10px] text-light-muted dark:text-dark-muted">
-                        {formatDistanceToNow(new Date(s.updated_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(s.updated_at), { addSuffix: true })} · Created {new Date(s.created_at).toLocaleDateString()}
                       </span>
                       <span
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/sessions/${s.session_id}/edit`); onNavigate?.(); }}
