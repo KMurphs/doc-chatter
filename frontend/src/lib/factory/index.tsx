@@ -47,7 +47,7 @@ function buildProviders(settings: AppSettings): Providers {
   // Inference — wrap raw provider to also persist history
   const isBedrock = settings.chatProvider === 'bedrock';
   const rawInference = isBedrock
-    ? createBedrockInference(settings.bedrockRegion || 'us-east-1', settings.bedrockModelId || 'anthropic.claude-sonnet-4-20250514-v1:0')
+    ? createBedrockInference(settings.bedrockRegion || 'us-east-1', settings.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0')
     : createGenericInference(settings.providerUrl, settings.providerToken);
 
   const inferenceService: InferenceService = {
@@ -63,7 +63,7 @@ function buildProviders(settings: AppSettings): Providers {
     const { settings: s, update } = useAppSettings();
     if (isBedrock) {
       return <BedrockInferenceSettings
-        config={{ bedrockRegion: s.bedrockRegion || 'us-east-1', bedrockModelId: s.bedrockModelId || 'anthropic.claude-sonnet-4-20250514-v1:0' }}
+        config={{ bedrockRegion: s.bedrockRegion || 'us-east-1', bedrockModelId: s.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0' }}
         onChange={u => update(u)} />;
     }
     return <GenericInferenceSettings

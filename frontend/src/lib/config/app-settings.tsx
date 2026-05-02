@@ -29,7 +29,7 @@ const DEFAULTS: AppSettings = {
   providerUrl: '',
   providerToken: '',
   bedrockRegion: 'us-east-1',
-  bedrockModelId: 'anthropic.claude-sonnet-4-20250514-v1:0',
+  bedrockModelId: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
 };
 
 const KEY = 'doc-chatter-app-settings';

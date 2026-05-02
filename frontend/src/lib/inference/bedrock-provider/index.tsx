@@ -90,7 +90,7 @@ export function Settings({ config, onChange }: {
         <label className={labelCls}>Model ID</label>
         <input className={inputCls} value={config.bedrockModelId}
           onChange={e => onChange({ bedrockModelId: e.target.value })}
-          placeholder="anthropic.claude-sonnet-4-20250514-v1:0" />
+          placeholder="us.anthropic.claude-sonnet-4-5-20250929-v1:0" />
       </div>
       <p className="text-[10px] text-light-muted dark:text-dark-muted">Uses Cognito credentials — sign in via Remote session storage</p>
     </>
