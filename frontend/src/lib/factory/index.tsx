@@ -15,14 +15,19 @@ import { AuthProvider } from '../sessions/remote-provider/auth';
 type UseVoiceHook = (options: UseVoiceOptions) => VoiceService;
 
 // --- Types ---
-interface ProviderAxis<S, C extends React.ComponentType | null = React.ComponentType | null> {
+interface ProviderAxis<S, C extends React.ComponentType<SettingsProps> | React.ComponentType | null = React.ComponentType | null> {
   service: S;
   Settings: C;
 }
 
+interface SettingsProps {
+  settings: AppSettings;
+  onChange: (u: Partial<AppSettings>) => void;
+}
+
 interface Providers {
   sessions: ProviderAxis<SessionService>;
-  inference: ProviderAxis<InferenceService, React.ComponentType>;
+  inference: ProviderAxis<InferenceService, React.ComponentType<SettingsProps>>;
   voice: ProviderAxis<UseVoiceHook>;
 }
 
@@ -59,16 +64,15 @@ function buildProviders(settings: AppSettings): Providers {
     },
   };
 
-  function InferenceSettings() {
-    const { settings: s, update } = useAppSettings();
-    if (isBedrock) {
+  function InferenceSettings({ settings: s, onChange }: { settings: AppSettings; onChange: (u: Partial<AppSettings>) => void }) {
+    if (s.chatProvider === 'bedrock') {
       return <BedrockInferenceSettings
         config={{ bedrockRegion: s.bedrockRegion || 'us-east-1', bedrockModelId: s.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0' }}
-        onChange={u => update(u)} />;
+        onChange={onChange} />;
     }
     return <GenericInferenceSettings
-      config={{ providerUrl: s.providerUrl, providerToken: s.providerToken }}
-      onChange={u => update(u)} />;
+      config={{ providerUrl: s.providerUrl, providerToken: s.providerToken, providerModelId: s.providerModelId }}
+      onChange={onChange} />;
   }
 
   return {

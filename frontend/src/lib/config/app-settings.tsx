@@ -14,6 +14,7 @@ export interface AppSettings {
   chatProvider: 'generic' | 'bedrock';
   providerUrl: string;
   providerToken: string;
+  providerModelId: string;
   bedrockRegion: string;
   bedrockModelId: string;
 }
@@ -28,6 +29,7 @@ const DEFAULTS: AppSettings = {
   chatProvider: 'generic',
   providerUrl: '',
   providerToken: '',
+  providerModelId: '',
   bedrockRegion: 'us-east-1',
   bedrockModelId: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
 };

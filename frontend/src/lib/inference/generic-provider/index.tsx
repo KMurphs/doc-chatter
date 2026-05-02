@@ -17,8 +17,8 @@ export function createService(url: string, token: string): InferenceService {
 }
 
 export function Settings({ config, onChange }: {
-  config: { providerUrl: string; providerToken: string };
-  onChange: (updates: Partial<{ providerUrl: string; providerToken: string }>) => void;
+  config: { providerUrl: string; providerToken: string; providerModelId: string };
+  onChange: (updates: Partial<{ providerUrl: string; providerToken: string; providerModelId: string }>) => void;
 }) {
   const labelCls = 'text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary';
   const inputCls = 'w-full mt-1 px-3 py-2 rounded-lg text-sm bg-light-surface-alt dark:bg-dark-surface-alt border border-light-border dark:border-dark-border focus:outline-none focus:border-accent/50';
@@ -36,6 +36,12 @@ export function Settings({ config, onChange }: {
         <input className={inputCls} type="password" value={config.providerToken}
           onChange={e => onChange({ providerToken: e.target.value })}
           placeholder="Bearer token or API key" />
+      </div>
+      <div>
+        <label className={labelCls}>Model ID (optional)</label>
+        <input className={inputCls} value={config.providerModelId}
+          onChange={e => onChange({ providerModelId: e.target.value })}
+          placeholder="e.g. gpt-4o, claude-sonnet-4-20250514" />
       </div>
     </>
   );
