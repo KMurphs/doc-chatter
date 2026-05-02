@@ -16,6 +16,21 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+export async function getCredentials() {
+  try {
+    const session = await fetchAuthSession();
+    const creds = session.credentials;
+    if (!creds) return null;
+    return {
+      accessKeyId: creds.accessKeyId,
+      secretAccessKey: creds.secretAccessKey,
+      sessionToken: creds.sessionToken || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,21 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut();
     setIsAuthenticated(false);
     setUsername(null);
-  }
-
-  async function getCredentials() {
-    try {
-      const session = await fetchAuthSession();
-      const creds = session.credentials;
-      if (!creds) return null;
-      return {
-        accessKeyId: creds.accessKeyId,
-        secretAccessKey: creds.secretAccessKey,
-        sessionToken: creds.sessionToken || '',
-      };
-    } catch {
-      return null;
-    }
   }
 
   return (

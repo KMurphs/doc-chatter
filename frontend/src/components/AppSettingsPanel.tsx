@@ -1,61 +1,104 @@
-import { AppSettings } from '../lib/app-settings';
+import { useState } from 'react';
+import { AppSettings } from '../lib';
+import { useInference, useSessions } from '../lib';
 
 export function AppSettingsPanel({ settings, onChange, onClose }: {
   settings: AppSettings;
   onChange: (partial: Partial<AppSettings>) => void;
   onClose: () => void;
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const { Settings: InferenceSettings } = useInference();
+  const { Settings: SessionSettings } = useSessions();
   const labelCls = 'text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary';
-  const inputCls = 'w-full mt-1 px-3 py-2 rounded-lg text-sm bg-light-surface-alt dark:bg-dark-surface-alt border border-light-border dark:border-dark-border focus:outline-none focus:border-accent/50';
+
+  function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+    return (
+      <button onClick={onToggle}
+        className={`w-10 h-6 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-light-border dark:bg-dark-border'}`}>
+        <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-1 ${on ? 'translate-x-4' : ''}`} />
+      </button>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-xl w-80 p-5" onClick={e => e.stopPropagation()}>
+      <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-xl w-80 max-h-[85vh] overflow-y-auto p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold">Settings</h2>
           <button onClick={onClose} className="text-light-muted dark:text-dark-muted hover:text-accent text-lg">×</button>
         </div>
 
         <div className="flex flex-col gap-4">
+          {/* Voice */}
           <div>
             <label className={labelCls}>Trigger word</label>
-            <input className={inputCls} value={settings.triggerWord}
+            <input className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-light-surface-alt dark:bg-dark-surface-alt border border-light-border dark:border-dark-border focus:outline-none focus:border-accent/50"
+              value={settings.triggerWord}
               onChange={e => onChange({ triggerWord: e.target.value.toLowerCase().trim() })}
               placeholder="e.g. send, over" />
             <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">Say this word to send your message</p>
           </div>
-
           <div>
             <label className={labelCls}>Silence timeout: {settings.silenceTimeout}s</label>
             <input type="range" min="1" max="5" step="0.5" value={settings.silenceTimeout}
               onChange={e => onChange({ silenceTimeout: parseFloat(e.target.value) })}
               className="w-full mt-1 accent-accent" />
-            <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">Auto-send after this silence (Auto mode)</p>
           </div>
-
           <div>
             <label className={labelCls}>Speech speed: {settings.ttsSpeed.toFixed(1)}×</label>
             <input type="range" min="0.5" max="2" step="0.1" value={settings.ttsSpeed}
               onChange={e => onChange({ ttsSpeed: parseFloat(e.target.value) })}
               className="w-full mt-1 accent-accent" />
-            <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">How fast the assistant reads responses aloud</p>
           </div>
 
+          {/* Display */}
           <div className="flex items-center justify-between pt-2 border-t border-light-border dark:border-dark-border">
             <label className={labelCls}>Render markdown</label>
-            <button onClick={() => onChange({ renderMarkdown: !settings.renderMarkdown })}
-              className={`w-10 h-6 rounded-full transition-colors ${settings.renderMarkdown ? 'bg-accent' : 'bg-light-border dark:bg-dark-border'}`}>
-              <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-1 ${settings.renderMarkdown ? 'translate-x-4' : ''}`} />
-            </button>
+            <Toggle on={settings.renderMarkdown} onToggle={() => onChange({ renderMarkdown: !settings.renderMarkdown })} />
           </div>
-
           <div className="flex items-center justify-between">
             <label className={labelCls}>Dark mode</label>
-            <button onClick={() => onChange({ darkMode: !settings.darkMode })}
-              className={`w-10 h-6 rounded-full transition-colors ${settings.darkMode ? 'bg-accent' : 'bg-light-border dark:bg-dark-border'}`}>
-              <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-1 ${settings.darkMode ? 'translate-x-4' : ''}`} />
-            </button>
+            <Toggle on={settings.darkMode} onToggle={() => onChange({ darkMode: !settings.darkMode })} />
           </div>
+
+          {/* Advanced */}
+          <button onClick={() => setShowAdvanced(!showAdvanced)}
+            className="text-xs text-accent hover:underline text-left pt-2 border-t border-light-border dark:border-dark-border">
+            {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
+          </button>
+
+          {showAdvanced && (
+            <div className="flex flex-col gap-4">
+              {/* Storage mode */}
+              <div>
+                <label className={labelCls}>Session storage</label>
+                <div className="flex rounded-lg overflow-hidden border border-light-border dark:border-dark-border mt-1">
+                  {(['local', 'remote'] as const).map(m => (
+                    <button key={m} onClick={() => onChange({ storageMode: m })}
+                      className={`flex-1 py-2 text-xs font-medium transition-colors ${m === settings.storageMode ? 'bg-accent/15 text-accent' : 'text-light-muted dark:text-dark-muted'}`}>
+                      {m === 'local' ? '💾 Local' : '☁️ Remote'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {SessionSettings && <SessionSettings />}
+
+              {/* Inference provider */}
+              <div>
+                <label className={labelCls}>Inference provider</label>
+                <div className="flex rounded-lg overflow-hidden border border-light-border dark:border-dark-border mt-1">
+                  {(['generic', 'bedrock'] as const).map(m => (
+                    <button key={m} onClick={() => onChange({ chatProvider: m })}
+                      className={`flex-1 py-2 text-xs font-medium transition-colors ${m === settings.chatProvider ? 'bg-accent/15 text-accent' : 'text-light-muted dark:text-dark-muted'}`}>
+                      {m === 'generic' ? '🔗 Generic' : '🪨 Bedrock'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <InferenceSettings />
+            </div>
+          )}
         </div>
       </div>
     </div>

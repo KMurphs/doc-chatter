@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { AppSettings } from './app-settings';
+import { AppSettings } from '../../config/app-settings';
 
 interface SpeechRecognitionResult { readonly 0: { readonly transcript: string }; }
 interface SpeechRecognitionEvent { readonly results: ArrayLike<SpeechRecognitionResult>; }

@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
-import { getSession, chat, getStreamToken, SessionDetail } from '../lib/sessions';
-import { useSpeech, VoiceMode } from '../lib/use-speech';
+import { useSessions, useInference, useVoice, useAppSettings, SessionDetail, VoiceMode } from '../lib';
 import { useSidebar } from '../App';
-import { useAppSettings } from '../lib/app-settings';
 import { AppSettingsPanel } from '../components/AppSettingsPanel';
 
 // --- Panel background based on voice state ---
@@ -116,11 +113,24 @@ function ChatTranscript({ history, sending, speaking, supported, speak, messages
   );
 }
 
+function ErrorBanner({ error }: { error: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="px-4 py-2 flex items-start gap-2 shrink-0 max-w-full overflow-hidden">
+      <span className="text-sm text-red-500 break-all line-clamp-2 min-w-0">{error}</span>
+      <button onClick={() => { navigator.clipboard.writeText(error); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        className="text-xs text-red-400 hover:text-red-300 shrink-0 mt-0.5">{copied ? '✓' : '📋'}</button>
+    </div>
+  );
+}
+
 // --- Main ChatPage ---
 export function ChatPage() {
   const { id } = useParams<{ id: string }>();
-  const { getCredentials } = useAuth();
   const { openSidebar } = useSidebar();
+  const sessionService = useSessions().service;
+  const { service: useSpeech } = useVoice();
+  const { service: { chat } } = useInference();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -156,15 +166,14 @@ export function ChatPage() {
   async function loadSession() {
     setLoading(true);
     try {
-      const creds = await getCredentials();
-      if (!creds || !id) return;
-      setSession(await getSession(creds, id));
+      if (!id) return;
+      setSession(await sessionService.get(id));
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to load'); }
     finally { setLoading(false); }
   }
 
   async function sendText(question: string) {
-    if (!question.trim() || !id || sending) return;
+    if (!question.trim() || !id || sending || !session) return;
     const wasVoice = lastInputWasVoice.current;
     lastInputWasVoice.current = false;
     setInput('');
@@ -172,12 +181,9 @@ export function ChatPage() {
     setError('');
     setSession(prev => prev ? { ...prev, history: [...prev.history, { role: 'user', content: question }] } : prev);
     try {
-      const creds = await getCredentials();
-      if (!creds) throw new Error('Not authenticated');
-      const st = await getStreamToken(creds, id);
-      const res = await chat(creds, id, question, st.token);
-      setSession(prev => prev ? { ...prev, history: [...prev.history, { role: 'assistant', content: res.answer }] } : prev);
-      if (wasVoice) speak(res.answer);
+      const answer = await chat(session, question);
+      setSession(prev => prev ? { ...prev, history: [...prev.history, { role: 'assistant', content: answer }] } : prev);
+      if (wasVoice) speak(answer);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Chat failed');
       setSession(prev => prev ? { ...prev, history: prev.history.slice(0, -1) } : prev);
@@ -216,7 +222,7 @@ export function ChatPage() {
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
             voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowAppSettings(true)} />
         </div>
-        {error && <div className="px-4 py-2 text-sm text-red-500 text-center shrink-0">{error}</div>}
+        {error && <ErrorBanner error={error} />}
         <div className="pb-4 px-4 flex justify-center shrink-0">
           <button onClick={() => setView('chat')}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-sm border border-light-border dark:border-dark-border text-light-muted dark:text-dark-muted hover:text-accent hover:border-accent transition-colors">
@@ -236,7 +242,7 @@ export function ChatPage() {
         {/* Left: chat */}
         <div className="flex-1 flex flex-col min-h-0">
           <ChatTranscript history={session.history} sending={sending} speaking={speaking} supported={supported} speak={speak} messagesEnd={messagesEnd} renderMarkdown={settings.renderMarkdown} />
-          {error && <div className="px-4 py-2 text-sm text-red-500 text-center">{error}</div>}
+          {error && <ErrorBanner error={error} />}
           <div className="pb-4 px-4 shrink-0">
             <div className="max-w-[720px] mx-auto flex items-center gap-2">
               <div className="flex-1 flex items-center gap-2 bg-light-surface-alt dark:bg-dark-surface-alt border border-light-border dark:border-dark-border rounded-2xl px-4 py-2 focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/20 transition-all">

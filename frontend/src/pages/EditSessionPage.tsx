@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
-import { getSession, updateSession, deleteSession, SessionDetail } from '../lib/sessions';
-import { useSessions } from '../lib/sessions-context';
+import { SessionDetail } from '../lib';
+import { useSessions } from '../lib';
 import { SessionForm, SessionFormData } from '../components/SessionForm';
 
 export function EditSessionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getCredentials } = useAuth();
-  const { refresh, removeSession } = useSessions();
+  const { service: sessionService, refresh, removeSession } = useSessions();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -17,18 +15,16 @@ export function EditSessionPage() {
   useEffect(() => {
     (async () => {
       try {
-        const creds = await getCredentials();
-        if (!creds || !id) return;
-        setSession(await getSession(creds, id));
+        if (!id) return;
+        setSession(await sessionService.get(id));
       } catch { /* ignore */ }
       finally { setLoading(false); }
     })();
   }, [id]);
 
   async function handleSave(data: SessionFormData) {
-    const creds = await getCredentials();
-    if (!creds || !id) throw new Error('Not authenticated');
-    await updateSession(creds, id, {
+    if (!id) throw new Error('No session ID');
+    await sessionService.update(id, {
       title: data.title,
       model: data.model,
       subject_expertise: data.subject_expertise,
@@ -44,8 +40,7 @@ export function EditSessionPage() {
     removeSession(id);
     navigate('/');
     try {
-      const creds = await getCredentials();
-      if (creds) await deleteSession(creds, id);
+      await sessionService.delete(id);
     } catch { /* ignore */ }
   }
 

@@ -1,15 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { useSessions } from '../lib/sessions-context';
-import { getSession, SessionDetail } from '../lib/sessions';
-import { useAuth } from '../lib/auth';
+import { useSessions } from '../lib';
+import { SessionDetail } from '../lib';
 
 const modelLabels: Record<string, string> = { opus: 'Deep', sonnet: 'Balanced', haiku: 'Fast' };
 
 export function Sidebar({ onNavigate, activeSessionId }: { onNavigate?: () => void; activeSessionId?: string }) {
-  const { sessions, loading, refresh } = useSessions();
-  const { getCredentials } = useAuth();
+  const { service: sessionService, loading, refresh, sessions } = useSessions();
   const navigate = useNavigate();
   const [activeDetail, setActiveDetail] = useState<SessionDetail | null>(null);
 
@@ -20,9 +18,8 @@ export function Sidebar({ onNavigate, activeSessionId }: { onNavigate?: () => vo
     let cancelled = false;
     (async () => {
       try {
-        const creds = await getCredentials();
-        if (!creds || cancelled) return;
-        const detail = await getSession(creds, activeSessionId);
+        if (cancelled) return;
+        const detail = await sessionService.get(activeSessionId);
         if (!cancelled) setActiveDetail(detail);
       } catch { /* ignore */ }
     })();

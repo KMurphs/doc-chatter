@@ -94,6 +94,13 @@ Resources:
               - Effect: Allow
                 Action: execute-api:Invoke
                 Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DocChatterApi}/*"
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - "arn:aws:bedrock:*:*:inference-profile/*"
 
   IdentityPoolRoleAttachment:
     Type: AWS::Cognito::IdentityPoolRoleAttachment

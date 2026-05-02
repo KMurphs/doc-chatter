@@ -1,11 +1,21 @@
 import { useState, createContext, useContext, useCallback, ReactNode } from 'react';
 
 export interface AppSettings {
+  // Voice
   triggerWord: string;
   silenceTimeout: number;
   ttsSpeed: number;
+  // Display
   darkMode: boolean;
   renderMarkdown: boolean;
+  // Storage mode
+  storageMode: 'local' | 'remote';
+  // Inference provider
+  chatProvider: 'generic' | 'bedrock';
+  providerUrl: string;
+  providerToken: string;
+  bedrockRegion: string;
+  bedrockModelId: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -14,6 +24,12 @@ const DEFAULTS: AppSettings = {
   ttsSpeed: 1.1,
   darkMode: typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
   renderMarkdown: true,
+  storageMode: 'local',
+  chatProvider: 'generic',
+  providerUrl: '',
+  providerToken: '',
+  bedrockRegion: 'us-east-1',
+  bedrockModelId: 'anthropic.claude-sonnet-4-20250514-v1:0',
 };
 
 const KEY = 'doc-chatter-app-settings';

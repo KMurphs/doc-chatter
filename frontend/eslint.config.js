@@ -27,4 +27,16 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },
+  // Prevent consumers from reaching into lib implementation folders
+  {
+    files: ['src/pages/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}', 'src/App.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['*/lib/*/*'],
+          message: 'Import from the lib barrel (../lib or ./lib) — not from internal folders. Direct imports bypass the provider abstraction and create coupling to implementation details that should be swappable.',
+        }],
+      }],
+    },
+  },
 )
