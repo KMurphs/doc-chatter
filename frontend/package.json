@@ -13,10 +13,12 @@
     "@aws-crypto/sha256-js": "^5.2.0",
     "@smithy/protocol-http": "^5.3.14",
     "@smithy/signature-v4": "^5.3.14",
+    "@tailwindcss/typography": "^0.5.19",
     "aws-amplify": "^6.16.4",
     "date-fns": "^4.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.2"
   },
   "devDependencies": {

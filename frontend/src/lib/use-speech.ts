@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { VoiceSettings } from './voice-settings';
+import { AppSettings } from './app-settings';
 
 interface SpeechRecognitionResult { readonly 0: { readonly transcript: string }; }
 interface SpeechRecognitionEvent { readonly results: ArrayLike<SpeechRecognitionResult>; }
@@ -20,7 +20,7 @@ export function useSpeech({ onTranscript, onFinalResult, voiceMode, settings }: 
   onTranscript: (text: string) => void;
   onFinalResult: (text: string) => void;
   voiceMode: VoiceMode;
-  settings: VoiceSettings;
+  settings: AppSettings;
 }) {
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);

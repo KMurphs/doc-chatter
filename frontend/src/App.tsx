@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
 import { AuthProvider, useAuth } from './lib/auth';
 import { SessionsProvider } from './lib/sessions-context';
-import { useVoiceSettings } from './lib/voice-settings';
-import { VoiceSettingsPanel } from './components/VoiceSettingsPanel';
+import { useAppSettings, AppSettingsProvider } from './lib/app-settings';
+import { AppSettingsPanel } from './components/AppSettingsPanel';
 import { Sidebar } from './components/Sidebar';
 import { EmptyPage } from './pages/EmptyPage';
 import { NewSessionPage } from './pages/NewSessionPage';
@@ -19,7 +19,7 @@ function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
   const activeSessionId = location.pathname.match(/\/sessions\/([^/]+)/)?.[1];
-  const { settings, update: updateSettings } = useVoiceSettings();
+  const { settings, update: updateSettings } = useAppSettings();
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
@@ -51,6 +51,12 @@ function AppLayout() {
           `}>
             <Sidebar onNavigate={() => setSidebarOpen(false)} activeSessionId={activeSessionId} />
             <div className="absolute bottom-0 left-0 right-0 px-3 py-3 border-t border-light-border dark:border-dark-border bg-light-sidebar dark:bg-dark-sidebar">
+              <button onClick={() => updateSettings({ renderMarkdown: !settings.renderMarkdown })}
+                className={`w-full flex items-center gap-2 px-2 py-2 mb-1 rounded-lg text-xs transition-colors ${
+                  settings.renderMarkdown ? 'text-accent bg-accent/10' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface-alt dark:hover:bg-dark-surface-alt'
+                }`}>
+                <span>📝</span> Markdown {settings.renderMarkdown ? 'on' : 'off'}
+              </button>
               <button onClick={() => setShowSettings(true)}
                 className="w-full flex items-center gap-2 px-2 py-2 mb-2 rounded-lg text-xs text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface-alt dark:hover:bg-dark-surface-alt transition-colors">
                 <span>⚙️</span> Settings
@@ -78,7 +84,7 @@ function AppLayout() {
             </Routes>
           </div>
         </div>
-        {showSettings && <VoiceSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
+        {showSettings && <AppSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
       </SessionsProvider>
     </SidebarContext.Provider>
   );
@@ -88,7 +94,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppLayout />
+        <AppSettingsProvider>
+          <AppLayout />
+        </AppSettingsProvider>
       </AuthProvider>
     </BrowserRouter>
   );

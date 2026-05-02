@@ -1,8 +1,8 @@
-import { VoiceSettings } from '../lib/voice-settings';
+import { AppSettings } from '../lib/app-settings';
 
-export function VoiceSettingsPanel({ settings, onChange, onClose }: {
-  settings: VoiceSettings;
-  onChange: (partial: Partial<VoiceSettings>) => void;
+export function AppSettingsPanel({ settings, onChange, onClose }: {
+  settings: AppSettings;
+  onChange: (partial: Partial<AppSettings>) => void;
   onClose: () => void;
 }) {
   const labelCls = 'text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary';
@@ -12,7 +12,7 @@ export function VoiceSettingsPanel({ settings, onChange, onClose }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-xl w-80 p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold">Voice Settings</h2>
+          <h2 className="text-sm font-semibold">Settings</h2>
           <button onClick={onClose} className="text-light-muted dark:text-dark-muted hover:text-accent text-lg">×</button>
         </div>
 
@@ -42,6 +42,14 @@ export function VoiceSettingsPanel({ settings, onChange, onClose }: {
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-light-border dark:border-dark-border">
+            <label className={labelCls}>Render markdown</label>
+            <button onClick={() => onChange({ renderMarkdown: !settings.renderMarkdown })}
+              className={`w-10 h-6 rounded-full transition-colors ${settings.renderMarkdown ? 'bg-accent' : 'bg-light-border dark:bg-dark-border'}`}>
+              <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-1 ${settings.renderMarkdown ? 'translate-x-4' : ''}`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
             <label className={labelCls}>Dark mode</label>
             <button onClick={() => onChange({ darkMode: !settings.darkMode })}
               className={`w-10 h-6 rounded-full transition-colors ${settings.darkMode ? 'bg-accent' : 'bg-light-border dark:bg-dark-border'}`}>

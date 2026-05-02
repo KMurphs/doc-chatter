@@ -4,8 +4,16 @@ import { useAuth } from '../lib/auth';
 import { getSession, chat, getStreamToken, SessionDetail } from '../lib/sessions';
 import { useSpeech, VoiceMode } from '../lib/use-speech';
 import { useSidebar } from '../App';
-import { useVoiceSettings } from '../lib/voice-settings';
-import { VoiceSettingsPanel } from '../components/VoiceSettingsPanel';
+import { useAppSettings } from '../lib/app-settings';
+import { AppSettingsPanel } from '../components/AppSettingsPanel';
+
+// --- Panel background based on voice state ---
+function panelBg(listening: boolean, speaking: boolean, sending: boolean) {
+  if (listening) return 'bg-accent/10 dark:bg-accent/20 transition-colors duration-500';
+  if (sending) return 'bg-amber-500/5 dark:bg-amber-500/10 transition-colors duration-500';
+  if (speaking) return 'bg-teal-500/5 dark:bg-teal-500/10 transition-colors duration-500';
+  return 'bg-light-surface dark:bg-dark-surface transition-colors duration-500';
+}
 
 // --- Mic button ---
 function MicButton({ listening, speaking, sending, size, onClick }: {
@@ -39,10 +47,11 @@ function VoiceModeToggle({ mode, onChange }: { mode: VoiceMode; onChange: (m: Vo
 }
 
 // --- Status label ---
-function StatusLabel({ listening, speaking, sending }: { listening: boolean; speaking: boolean; sending: boolean }) {
+function StatusLabel({ listening, speaking, sending, voiceMode }: { listening: boolean; speaking: boolean; sending: boolean; voiceMode: VoiceMode }) {
   if (listening) return <span className="text-accent">Listening...</span>;
   if (sending) return <span className="text-amber-500">Thinking...</span>;
   if (speaking) return <span className="text-accent">Speaking...</span>;
+  if (voiceMode === 'always') return <span className="text-light-muted dark:text-dark-muted">Ready — speak when ready</span>;
   return <span className="text-light-muted dark:text-dark-muted">Tap to speak</span>;
 }
 
@@ -56,7 +65,7 @@ function MicPanel({ listening, speaking, sending, size, onMicTap, onStopSpeaking
   return (
     <div className="flex flex-col items-center gap-5">
       <MicButton listening={listening} speaking={speaking} sending={sending} size={size} onClick={onMicTap} />
-      <div className="text-xs"><StatusLabel listening={listening} speaking={speaking} sending={sending} /></div>
+      <div className="text-xs"><StatusLabel listening={listening} speaking={speaking} sending={sending} voiceMode={voiceMode} /></div>
       <div className="flex items-center gap-2">
         <VoiceModeToggle mode={voiceMode} onChange={onVoiceModeChange} />
         <button onClick={onSettings} className="text-[10px] px-2 py-1 rounded-lg border border-light-border dark:border-dark-border text-light-muted dark:text-dark-muted hover:text-accent transition-colors">⚙️</button>
@@ -68,11 +77,14 @@ function MicPanel({ listening, speaking, sending, size, onMicTap, onStopSpeaking
   );
 }
 
+import Markdown from 'react-markdown';
+
 // --- Chat transcript ---
-function ChatTranscript({ history, sending, speaking, supported, speak, messagesEnd }: {
+function ChatTranscript({ history, sending, speaking, supported, speak, messagesEnd, renderMarkdown }: {
   history: { role: string; content: string }[];
   sending: boolean; speaking: boolean; supported: boolean;
   speak: (t: string) => void; messagesEnd: React.RefObject<HTMLDivElement>;
+  renderMarkdown: boolean;
 }) {
   return (
     <div className="flex-1 overflow-y-auto">
@@ -82,12 +94,14 @@ function ChatTranscript({ history, sending, speaking, supported, speak, messages
         )}
         {history.map((turn, i) => (
           <div key={i} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`text-sm leading-relaxed ${
+            <div className={`text-sm leading-relaxed whitespace-pre-wrap ${
               turn.role === 'user'
                 ? 'bg-accent/10 dark:bg-accent/15 text-light-text-primary dark:text-dark-text-primary rounded-2xl rounded-br-md px-4 py-3 max-w-[80%]'
                 : 'text-light-text-primary dark:text-dark-text-primary max-w-full'
             }`}>
-              {turn.content}
+              {turn.role === 'assistant' && renderMarkdown
+                ? <div className="prose prose-sm dark:prose-invert max-w-none"><Markdown>{turn.content}</Markdown></div>
+                : turn.content}
               {turn.role === 'assistant' && supported && (
                 <button onClick={() => speak(turn.content)} className="ml-2 text-light-muted dark:text-dark-muted hover:text-accent text-xs align-middle">🔊</button>
               )}
@@ -114,10 +128,10 @@ export function ChatPage() {
   const [error, setError] = useState('');
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('tap');
   const [view, setView] = useState<'chat' | 'eyes-off'>('chat');
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [showAppSettings, setShowAppSettings] = useState(false);
   const messagesEnd = useRef<HTMLDivElement>(null);
   const lastInputWasVoice = useRef(false);
-  const { settings, update: updateSettings } = useVoiceSettings();
+  const { settings, update: updateSettings } = useAppSettings();
 
   const handleTranscript = useCallback((text: string) => {
     setInput(text);
@@ -197,10 +211,10 @@ export function ChatPage() {
     return (
       <div className="flex flex-col h-full">
         {header}
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
+        <div className={`flex-1 flex flex-col items-center justify-center px-4 ${panelBg(listening, speaking, sending)}`}>
           <MicPanel listening={listening} speaking={speaking} sending={sending} size="xl"
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
-            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowVoiceSettings(true)} />
+            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowAppSettings(true)} />
         </div>
         {error && <div className="px-4 py-2 text-sm text-red-500 text-center shrink-0">{error}</div>}
         <div className="pb-4 px-4 flex justify-center shrink-0">
@@ -209,7 +223,7 @@ export function ChatPage() {
             💬
           </button>
         </div>
-        {showVoiceSettings && <VoiceSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowVoiceSettings(false)} />}
+        {showAppSettings && <AppSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowAppSettings(false)} />}
       </div>
     );
   }
@@ -221,7 +235,7 @@ export function ChatPage() {
       <div className="flex-1 flex min-h-0">
         {/* Left: chat */}
         <div className="flex-1 flex flex-col min-h-0">
-          <ChatTranscript history={session.history} sending={sending} speaking={speaking} supported={supported} speak={speak} messagesEnd={messagesEnd} />
+          <ChatTranscript history={session.history} sending={sending} speaking={speaking} supported={supported} speak={speak} messagesEnd={messagesEnd} renderMarkdown={settings.renderMarkdown} />
           {error && <div className="px-4 py-2 text-sm text-red-500 text-center">{error}</div>}
           <div className="pb-4 px-4 shrink-0">
             <div className="max-w-[720px] mx-auto flex items-center gap-2">
@@ -244,13 +258,13 @@ export function ChatPage() {
           </div>
         </div>
         {/* Right: mic panel (desktop only) */}
-        <div className="hidden lg:flex w-80 shrink-0 flex-col items-center justify-center border-l border-light-border dark:border-dark-border bg-light-surface dark:bg-dark-surface">
+        <div className={`hidden lg:flex w-80 shrink-0 flex-col items-center justify-center border-l border-light-border dark:border-dark-border ${panelBg(listening, speaking, sending)}`}>
           <MicPanel listening={listening} speaking={speaking} sending={sending} size="lg"
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
-            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowVoiceSettings(true)} />
+            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowAppSettings(true)} />
         </div>
       </div>
-      {showVoiceSettings && <VoiceSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowVoiceSettings(false)} />}
+      {showAppSettings && <AppSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowAppSettings(false)} />}
     </div>
   );
 }
