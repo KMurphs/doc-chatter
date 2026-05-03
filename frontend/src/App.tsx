@@ -70,9 +70,11 @@ function AppLayout() {
   );
 }
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={BASE}>
       <AppSettingsProvider>
         <AppLayout />
       </AppSettingsProvider>
