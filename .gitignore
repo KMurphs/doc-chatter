@@ -1,0 +1,26 @@
+# Rust
+target/
+Cargo.lock
+
+# Node / React
+node_modules/
+dist/
+.env
+.env.local
+
+# AWS SAM
+.aws-sam/
+samconfig.toml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Build
+build/
+
+.playwright-mcp
