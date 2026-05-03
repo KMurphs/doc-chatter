@@ -31,9 +31,9 @@ const DEFAULTS: AppSettings = {
   renderMarkdown: true,
   storageMode: 'local',
   chatProvider: 'generic',
-  providerUrl: '',
+  providerUrl: 'https://api.openai.com/v1/chat/completions',
   providerToken: '',
-  providerModelId: '',
+  providerModelId: 'gpt-4o-mini',
   bedrockRegion: 'us-east-1',
   bedrockModelId: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
 };

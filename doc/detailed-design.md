@@ -346,6 +346,7 @@ What you build:
 
 ## Future (Post Phase 1)
 
+- **Cloudflare Worker proxy for API keys** — Currently, third-party API keys (OpenAI, Groq, etc.) are stored in localStorage and sent directly from the browser. This works for a personal local tool but is a security concern for any shared or deployed version: localStorage is vulnerable to XSS, and keys are visible in network requests. A lightweight Cloudflare Worker could hold keys server-side and proxy inference requests, eliminating client-side key exposure. Investigate cost, latency overhead, and whether it can replace the need for a full backend for inference routing.
 - AWS Polly for TTS, replacing browser-native speech synthesis
 - Local Ollama inference via Cloudflare Tunnel when a personal machine is available
 - RAG or retrieval pipeline if full-context reasoning hits limits

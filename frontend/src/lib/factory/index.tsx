@@ -35,7 +35,7 @@ const SESSION_PROVIDERS: ProviderOption[] = [
 
 const INFERENCE_PROVIDERS: ProviderOption[] = [
   {
-    key: 'generic', label: '🔗 Generic (Token + URL)',
+    key: 'generic', label: '🔗 OpenAI-compatible',
     Settings: ({ draft, onChange }) => <GenericInferenceSettings
       config={{ providerUrl: draft.providerUrl, providerToken: draft.providerToken, providerModelId: draft.providerModelId }}
       onChange={onChange} />,
@@ -88,7 +88,7 @@ function buildProviders(settings: AppSettings): Providers {
 
   const rawInference = settings.chatProvider === 'bedrock'
     ? createBedrockInference(settings.bedrockRegion || 'us-east-1', settings.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0')
-    : createGenericInference(settings.providerUrl, settings.providerToken);
+    : createGenericInference(settings.providerUrl, settings.providerToken, settings.providerModelId);
 
   const inferenceService: InferenceService = {
     async chat(session: SessionDetail, question: string): Promise<string> {

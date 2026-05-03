@@ -109,7 +109,7 @@ test.describe('Settings panel', () => {
     // Switch to generic
     await page.locator('select').nth(1).selectOption('generic');
     await expect(page.getByText('Endpoint URL')).toBeVisible();
-    await expect(page.getByText('Token', { exact: true })).toBeVisible();
+    await expect(page.getByText('API Key', { exact: true })).toBeVisible();
   });
 
   test('cancel discards changes', async ({ page }) => {

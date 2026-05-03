@@ -1,17 +1,28 @@
 import { SessionDetail } from '../../sessions/types';
 import { InferenceService } from '../types';
 
-export function createService(url: string, token: string): InferenceService {
+export function createService(url: string, token: string, modelId: string): InferenceService {
   return {
     async chat(session: SessionDetail, question: string): Promise<string> {
+      const systemPrompt = session.system_prompt || `You are a research paper assistant.\n\nPaper:\n${session.paper_text}`;
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...session.history.map(t => ({ role: t.role as 'user' | 'assistant', content: t.content })),
+        { role: 'user' as const, content: question },
+      ];
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ session_id: session.session_id, question }),
+        body: JSON.stringify({ model: modelId, messages }),
       });
-      if (!res.ok) throw new Error(`Chat failed: ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text();
+        const short = text.length > 200 ? text.slice(0, 200) + '…' : text;
+        throw new Error(`${res.status}: ${short}`);
+      }
       const data = await res.json();
-      return data.answer ?? data.choices?.[0]?.message?.content ?? JSON.stringify(data);
+      return data.choices?.[0]?.message?.content ?? JSON.stringify(data);
     },
   };
 }
@@ -29,20 +40,21 @@ export function Settings({ config, onChange }: {
         <label className={labelCls}>Endpoint URL</label>
         <input className={inputCls} value={config.providerUrl}
           onChange={e => onChange({ providerUrl: e.target.value })}
-          placeholder="https://api.example.com/chat" />
+          placeholder="https://api.openai.com/v1/chat/completions" />
       </div>
       <div>
-        <label className={labelCls}>Token</label>
+        <label className={labelCls}>API Key</label>
         <input className={inputCls} type="password" value={config.providerToken}
           onChange={e => onChange({ providerToken: e.target.value })}
-          placeholder="Bearer token or API key" />
+          placeholder="sk-..." />
       </div>
       <div>
-        <label className={labelCls}>Model ID (optional)</label>
+        <label className={labelCls}>Model</label>
         <input className={inputCls} value={config.providerModelId}
           onChange={e => onChange({ providerModelId: e.target.value })}
-          placeholder="e.g. gpt-4o, claude-sonnet-4-20250514" />
+          placeholder="gpt-4o-mini" />
       </div>
+      <p className="text-[10px] text-light-muted dark:text-dark-muted">OpenAI-compatible API — works with OpenAI, Ollama, Groq, LM Studio, etc.</p>
     </>
   );
 }
