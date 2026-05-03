@@ -1,4 +1,4 @@
-import { AppSettings } from '../config/app-settings';
+import { UserSettings } from '../config/app-settings';
 
 export type VoiceMode = 'tap' | 'always';
 
@@ -16,5 +16,5 @@ export interface UseVoiceOptions {
   onTranscript: (text: string) => void;
   onFinalResult: (text: string) => void;
   voiceMode: VoiceMode;
-  settings: AppSettings;
+  settings: UserSettings;
 }

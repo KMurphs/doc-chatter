@@ -1,33 +1,72 @@
 import { createContext, useContext, useMemo, useState, useCallback, ReactNode } from 'react';
-import { useAppSettings, AppSettings } from '../config/app-settings';
+import { useAppSettings, AppSettings, FactorySettings } from '../config/app-settings';
 import { SessionService, SessionSummary } from '../sessions/types';
 import { SessionDetail } from '../sessions/types';
+import { InferenceService } from '../inference/types';
 
 import { service as localSessionService, Settings as LocalSessionSettings } from '../sessions/local-provider';
 import * as remoteProvider from '../sessions/remote-provider';
 import { createService as createGenericInference, Settings as GenericInferenceSettings } from '../inference/generic-provider';
 import { createService as createBedrockInference, Settings as BedrockInferenceSettings } from '../inference/bedrock-provider';
-import { InferenceService } from '../inference/types';
 import { useSpeech as browserUseSpeech } from '../voice/browser-provider/speech';
 import { VoiceService, UseVoiceOptions } from '../voice/types';
 import { AuthProvider } from '../sessions/remote-provider/auth';
 
 type UseVoiceHook = (options: UseVoiceOptions) => VoiceService;
 
-// --- Types ---
-interface ProviderAxis<S, C extends React.ComponentType<SettingsProps> | React.ComponentType | null = React.ComponentType | null> {
+// --- Axis registry types ---
+export interface ProviderOption {
+  key: string;
+  label: string;
+  Settings: React.ComponentType<{ draft: FactorySettings; onChange: (u: Partial<FactorySettings>) => void }> | null;
+}
+
+export interface AxisDescriptor {
+  label: string;
+  settingsKey: keyof FactorySettings;
+  options: ProviderOption[];
+}
+
+// --- Provider registries ---
+const SESSION_PROVIDERS: ProviderOption[] = [
+  { key: 'local', label: '💾 Local (IndexedDB)', Settings: LocalSessionSettings ? () => { const S = LocalSessionSettings; return S ? <S /> : null; } : null },
+  { key: 'remote', label: '☁️ Remote (API Gateway)', Settings: () => { const S = remoteProvider.Settings; return <S />; } },
+];
+
+const INFERENCE_PROVIDERS: ProviderOption[] = [
+  {
+    key: 'generic', label: '🔗 Generic (Token + URL)',
+    Settings: ({ draft, onChange }) => <GenericInferenceSettings
+      config={{ providerUrl: draft.providerUrl, providerToken: draft.providerToken, providerModelId: draft.providerModelId }}
+      onChange={onChange} />,
+  },
+  {
+    key: 'bedrock', label: '🪨 AWS Bedrock',
+    Settings: ({ draft, onChange }) => <BedrockInferenceSettings
+      config={{ bedrockRegion: draft.bedrockRegion || 'us-east-1', bedrockModelId: draft.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0' }}
+      onChange={onChange} />,
+  },
+];
+
+const VOICE_PROVIDERS: ProviderOption[] = [
+  { key: 'browser', label: '🎤 Browser (Web Speech API)', Settings: null },
+];
+
+export const AXES: AxisDescriptor[] = [
+  { label: 'Session storage', settingsKey: 'storageMode', options: SESSION_PROVIDERS },
+  { label: 'Inference provider', settingsKey: 'chatProvider', options: INFERENCE_PROVIDERS },
+  { label: 'Voice provider', settingsKey: 'voiceProvider' as keyof AppSettings, options: VOICE_PROVIDERS },
+];
+
+// --- Provider axis types ---
+interface ProviderAxis<S, C extends React.ComponentType<{ draft: FactorySettings; onChange: (u: Partial<FactorySettings>) => void }> | React.ComponentType | null = React.ComponentType | null> {
   service: S;
   Settings: C;
 }
 
-interface SettingsProps {
-  settings: AppSettings;
-  onChange: (u: Partial<AppSettings>) => void;
-}
-
 interface Providers {
   sessions: ProviderAxis<SessionService>;
-  inference: ProviderAxis<InferenceService, React.ComponentType<SettingsProps>>;
+  inference: ProviderAxis<InferenceService, React.ComponentType<{ draft: FactorySettings; onChange: (u: Partial<FactorySettings>) => void }>>;
   voice: ProviderAxis<UseVoiceHook>;
 }
 
@@ -44,14 +83,10 @@ const Ctx = createContext<FactoryContext | null>(null);
 
 // --- Factory logic ---
 function buildProviders(settings: AppSettings): Providers {
-  // Sessions
-  const isLocal = settings.storageMode === 'local';
-  const sessionService = isLocal ? localSessionService : remoteProvider.service;
-  const SessionSettings = isLocal ? LocalSessionSettings : remoteProvider.Settings;
+  const sessionService = settings.storageMode === 'local' ? localSessionService : remoteProvider.service;
+  const SessionSettings = SESSION_PROVIDERS.find(p => p.key === settings.storageMode)?.Settings ?? null;
 
-  // Inference — wrap raw provider to also persist history
-  const isBedrock = settings.chatProvider === 'bedrock';
-  const rawInference = isBedrock
+  const rawInference = settings.chatProvider === 'bedrock'
     ? createBedrockInference(settings.bedrockRegion || 'us-east-1', settings.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0')
     : createGenericInference(settings.providerUrl, settings.providerToken);
 
@@ -64,16 +99,7 @@ function buildProviders(settings: AppSettings): Providers {
     },
   };
 
-  function InferenceSettings({ settings: s, onChange }: { settings: AppSettings; onChange: (u: Partial<AppSettings>) => void }) {
-    if (s.chatProvider === 'bedrock') {
-      return <BedrockInferenceSettings
-        config={{ bedrockRegion: s.bedrockRegion || 'us-east-1', bedrockModelId: s.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0' }}
-        onChange={onChange} />;
-    }
-    return <GenericInferenceSettings
-      config={{ providerUrl: s.providerUrl, providerToken: s.providerToken, providerModelId: s.providerModelId }}
-      onChange={onChange} />;
-  }
+  const InferenceSettings = INFERENCE_PROVIDERS.find(p => p.key === settings.chatProvider)?.Settings ?? (() => null);
 
   return {
     sessions: { service: sessionService, Settings: SessionSettings },

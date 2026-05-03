@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { useSessions, useInference, useVoice, useAppSettings, SessionDetail, VoiceMode } from '../lib';
-import { useSidebar } from '../App';
-import { AppSettingsPanel } from '../components/AppSettingsPanel';
+import { useSessions, useInference, useVoice, useUserSettings, SessionDetail, VoiceMode } from '../lib';
+import { useSidebar, useSettingsModal } from '../App';
 
 // --- Panel background based on voice state ---
 function panelBg(listening: boolean, speaking: boolean, sending: boolean) {
@@ -128,6 +127,7 @@ function ErrorBanner({ error }: { error: string }) {
 export function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const { openSidebar } = useSidebar();
+  const { openSettings } = useSettingsModal();
   const sessionService = useSessions().service;
   const { service: useSpeech } = useVoice();
   const { service: { chat } } = useInference();
@@ -138,10 +138,9 @@ export function ChatPage() {
   const [error, setError] = useState('');
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('tap');
   const [view, setView] = useState<'chat' | 'eyes-off'>('chat');
-  const [showAppSettings, setShowAppSettings] = useState(false);
   const messagesEnd = useRef<HTMLDivElement>(null);
   const lastInputWasVoice = useRef(false);
-  const { settings, update: updateSettings } = useAppSettings();
+  const { settings } = useUserSettings();
 
   const handleTranscript = useCallback((text: string) => {
     setInput(text);
@@ -220,7 +219,7 @@ export function ChatPage() {
         <div className={`flex-1 flex flex-col items-center justify-center px-4 ${panelBg(listening, speaking, sending)}`}>
           <MicPanel listening={listening} speaking={speaking} sending={sending} size="xl"
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
-            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowAppSettings(true)} />
+            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => openSettings()} />
         </div>
         {error && <ErrorBanner error={error} />}
         <div className="pb-4 px-4 flex justify-center shrink-0">
@@ -229,7 +228,6 @@ export function ChatPage() {
             💬
           </button>
         </div>
-        {showAppSettings && <AppSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowAppSettings(false)} />}
       </div>
     );
   }
@@ -267,10 +265,9 @@ export function ChatPage() {
         <div className={`hidden lg:flex w-80 shrink-0 flex-col items-center justify-center border-l border-light-border dark:border-dark-border ${panelBg(listening, speaking, sending)}`}>
           <MicPanel listening={listening} speaking={speaking} sending={sending} size="lg"
             onMicTap={handleMicTap} onStopSpeaking={stopSpeaking}
-            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => setShowAppSettings(true)} />
+            voiceMode={voiceMode} onVoiceModeChange={setVoiceMode} onSettings={() => openSettings()} />
         </div>
       </div>
-      {showAppSettings && <AppSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowAppSettings(false)} />}
     </div>
   );
 }

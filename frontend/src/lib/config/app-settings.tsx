@@ -1,23 +1,27 @@
 import { useState, createContext, useContext, useCallback, ReactNode } from 'react';
 
-export interface AppSettings {
-  // Voice
+/** Consumer-facing settings — display and voice preferences only. */
+export interface UserSettings {
   triggerWord: string;
   silenceTimeout: number;
   ttsSpeed: number;
-  // Display
   darkMode: boolean;
   renderMarkdown: boolean;
-  // Storage mode
-  storageMode: 'local' | 'remote';
-  // Inference provider
-  chatProvider: 'generic' | 'bedrock';
+}
+
+/** Provider config — owned by the factory. */
+export interface FactorySettings {
+  storageMode: string;
+  chatProvider: string;
   providerUrl: string;
   providerToken: string;
   providerModelId: string;
   bedrockRegion: string;
   bedrockModelId: string;
 }
+
+/** Full persisted config — union of user prefs + factory config. */
+export interface AppSettings extends UserSettings, FactorySettings {}
 
 const DEFAULTS: AppSettings = {
   triggerWord: 'send',
@@ -69,8 +73,16 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={{ settings, update }}>{children}</Ctx.Provider>;
 }
 
+/** Internal — full settings. Only used by factory and settings panel. */
 export function useAppSettings() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error('useAppSettings must be used within AppSettingsProvider');
+  return ctx;
+}
+
+/** Consumer-facing — only display and voice fields visible. */
+export function useUserSettings(): { settings: UserSettings; update: (partial: Partial<UserSettings>) => void } {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useUserSettings must be used within AppSettingsProvider');
   return ctx;
 }

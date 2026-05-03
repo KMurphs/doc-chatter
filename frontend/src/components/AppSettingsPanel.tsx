@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { AppSettings } from '../lib';
-import { useInference, useSessions } from '../lib';
+import { AppSettings, FactorySettings, AXES } from '../lib';
 
 export function AppSettingsPanel({ settings, onChange, onClose }: {
   settings: AppSettings;
@@ -9,8 +8,6 @@ export function AppSettingsPanel({ settings, onChange, onClose }: {
 }) {
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const { Settings: InferenceSettings } = useInference();
-  const { Settings: SessionSettings } = useSessions();
 
   const labelCls = 'text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary';
   const inputCls = 'w-full mt-1 px-3 py-2 rounded-lg text-sm bg-light-surface-alt dark:bg-dark-surface-alt border border-light-border dark:border-dark-border focus:outline-none focus:border-accent/50';
@@ -74,7 +71,7 @@ export function AppSettingsPanel({ settings, onChange, onClose }: {
             <Toggle on={draft.darkMode} onToggle={() => patch({ darkMode: !draft.darkMode })} />
           </div>
 
-          {/* Advanced */}
+          {/* Advanced — driven by AXES registry */}
           <button onClick={() => setShowAdvanced(!showAdvanced)}
             className="text-xs text-accent hover:underline text-left pt-2 border-t border-light-border dark:border-dark-border">
             {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
@@ -82,23 +79,27 @@ export function AppSettingsPanel({ settings, onChange, onClose }: {
 
           {showAdvanced && (
             <div className="flex flex-col gap-4">
-              <div>
-                <label className={labelCls}>Session storage</label>
-                <select className={selectCls} value={draft.storageMode} onChange={e => patch({ storageMode: e.target.value as 'local' | 'remote' })}>
-                  <option value="local">💾 Local (IndexedDB)</option>
-                  <option value="remote">☁️ Remote (API Gateway)</option>
-                </select>
-              </div>
-              {SessionSettings && <SessionSettings />}
-
-              <div>
-                <label className={labelCls}>Inference provider</label>
-                <select className={selectCls} value={draft.chatProvider} onChange={e => patch({ chatProvider: e.target.value as 'generic' | 'bedrock' })}>
-                  <option value="generic">🔗 Generic (Token + URL)</option>
-                  <option value="bedrock">🪨 AWS Bedrock</option>
-                </select>
-              </div>
-              <InferenceSettings settings={draft} onChange={patch} />
+              {AXES.map((axis, i) => {
+                const currentKey = (draft[axis.settingsKey] ?? axis.options[0]?.key) as string;
+                const active = axis.options.find(o => o.key === currentKey) ?? axis.options[0];
+                return (
+                  <div key={axis.settingsKey} className="flex flex-col gap-3">
+                    {i > 0 && <hr className="border-light-border dark:border-dark-border" />}
+                    <div>
+                      <label className={labelCls}>{axis.label}</label>
+                      {axis.options.length > 1 ? (
+                        <select className={selectCls} value={currentKey}
+                          onChange={e => patch({ [axis.settingsKey]: e.target.value } as Partial<FactorySettings>)}>
+                          {axis.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                        </select>
+                      ) : (
+                        <p className="text-xs text-light-muted dark:text-dark-muted mt-1">{active?.label}</p>
+                      )}
+                    </div>
+                    {active?.Settings && <active.Settings draft={draft} onChange={patch} />}
+                  </div>
+                );
+              })}
             </div>
           )}
 

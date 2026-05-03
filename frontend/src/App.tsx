@@ -8,8 +8,9 @@ import { NewSessionPage } from './pages/NewSessionPage';
 import { ChatPage } from './pages/ChatPage';
 import { EditSessionPage } from './pages/EditSessionPage';
 
-const SidebarContext = createContext<{ openSidebar: () => void }>({ openSidebar: () => {} });
-export function useSidebar() { return useContext(SidebarContext); }
+const ShellContext = createContext<{ openSidebar: () => void; openSettings: () => void }>({ openSidebar: () => {}, openSettings: () => {} });
+export function useSidebar() { return useContext(ShellContext); }
+export function useSettingsModal() { return useContext(ShellContext); }
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -23,7 +24,7 @@ function AppLayout() {
   }, [settings.darkMode]);
 
   return (
-    <SidebarContext.Provider value={{ openSidebar: () => setSidebarOpen(true) }}>
+    <ShellContext.Provider value={{ openSidebar: () => setSidebarOpen(true), openSettings: () => setShowSettings(true) }}>
       <FactoryProvider>
         <div className="flex h-screen bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary">
           <div className={`
@@ -35,12 +36,14 @@ function AppLayout() {
           `}>
             <Sidebar onNavigate={() => setSidebarOpen(false)} activeSessionId={activeSessionId} />
             <div className="absolute bottom-0 left-0 right-0 px-3 py-3 border-t border-light-border dark:border-dark-border bg-light-sidebar dark:bg-dark-sidebar">
-              <button onClick={() => updateSettings({ renderMarkdown: !settings.renderMarkdown })}
-                className={`w-full flex items-center gap-2 px-2 py-2 mb-1 rounded-lg text-xs transition-colors ${
-                  settings.renderMarkdown ? 'text-accent bg-accent/10' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface-alt dark:hover:bg-dark-surface-alt'
-                }`}>
-                <span>📝</span> Markdown {settings.renderMarkdown ? 'on' : 'off'}
-              </button>
+              {activeSessionId && (
+                <button onClick={() => updateSettings({ renderMarkdown: !settings.renderMarkdown })}
+                  className={`w-full flex items-center gap-2 px-2 py-2 mb-1 rounded-lg text-xs transition-colors ${
+                    settings.renderMarkdown ? 'text-accent bg-accent/10' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface-alt dark:hover:bg-dark-surface-alt'
+                  }`}>
+                  <span>📝</span> Markdown {settings.renderMarkdown ? 'on' : 'off'}
+                </button>
+              )}
               <button onClick={() => setShowSettings(true)}
                 className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-surface-alt dark:hover:bg-dark-surface-alt transition-colors">
                 <span>⚙️</span> Settings
@@ -63,7 +66,7 @@ function AppLayout() {
         </div>
         {showSettings && <AppSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setShowSettings(false)} />}
       </FactoryProvider>
-    </SidebarContext.Provider>
+    </ShellContext.Provider>
   );
 }
 

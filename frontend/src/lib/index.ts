@@ -25,15 +25,21 @@
  *   - useInference() → chat service + Settings (e.g. endpoint URL fields, Bedrock model picker)
  *   - useVoice()     → speech hook + Settings (null for browser provider)
  *
- * Consumers never know which provider is active. The factory decides once based on settings.
+ * Consumers see UserSettings (display + voice only). Provider config (storageMode,
+ * chatProvider, credentials) is internal to the factory.
  */
 
-// Types
+// Types — consumer-facing
 export type { SessionSummary, SessionDetail, CreateSessionRequest, UpdateSessionRequest, SessionService } from './sessions/types';
 export type { InferenceService } from './inference/types';
 export type { VoiceMode, VoiceService, UseVoiceOptions } from './voice/types';
-export type { AppSettings } from './config/app-settings';
+export type { UserSettings } from './config/app-settings';
 
-// Runtime
-export { FactoryProvider, useSessions, useInference, useVoice } from './factory';
-export { useAppSettings, AppSettingsProvider } from './config/app-settings';
+// Runtime — consumer-facing
+export { FactoryProvider, useSessions, useInference, useVoice, AXES } from './factory';
+export type { AxisDescriptor, ProviderOption } from './factory';
+export { useUserSettings, AppSettingsProvider } from './config/app-settings';
+
+// Internal — only for settings panel and App.tsx (which hosts the panel)
+export type { AppSettings, FactorySettings } from './config/app-settings';
+export { useAppSettings } from './config/app-settings';
