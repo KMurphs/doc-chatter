@@ -121,6 +121,8 @@ export function FactoryProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    setList([]);
+    setLoading(true);
     try {
       const data = await providers.sessions.service.list();
       setList(data);
@@ -129,7 +131,9 @@ export function FactoryProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [providers.sessions]);
+  }, [providers]);
+
+  // No auto-refresh effect — Sidebar and pages call refresh() explicitly
 
   const removeSession = useCallback((id: string) => {
     setList(prev => prev.filter(s => s.session_id !== id));

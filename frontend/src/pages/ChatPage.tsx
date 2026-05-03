@@ -146,10 +146,12 @@ export function ChatPage() {
     setInput(text);
   }, []);
 
+  const sendTextRef = useRef<(q: string) => void>(() => {});
+
   const handleFinalResult = useCallback((text: string) => {
     lastInputWasVoice.current = true;
     setInput('');
-    sendText(text);
+    sendTextRef.current(text);
   }, []);
 
   const { listening, speaking, supported, startListening, stopListening, speak, stopSpeaking } = useSpeech({
@@ -188,6 +190,7 @@ export function ChatPage() {
       setSession(prev => prev ? { ...prev, history: prev.history.slice(0, -1) } : prev);
     } finally { setSending(false); }
   }
+  sendTextRef.current = sendText;
 
   function handleSend() { lastInputWasVoice.current = false; sendText(input); }
 

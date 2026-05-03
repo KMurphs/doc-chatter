@@ -11,7 +11,8 @@ export function Sidebar({ onNavigate, activeSessionId }: { onNavigate?: () => vo
   const navigate = useNavigate();
   const [activeDetail, setActiveDetail] = useState<SessionDetail | null>(null);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [refresh]);
+
 
   useEffect(() => {
     if (!activeSessionId) { setActiveDetail(null); return; }
@@ -33,6 +34,10 @@ export function Sidebar({ onNavigate, activeSessionId }: { onNavigate?: () => vo
   return (
     <div className="flex flex-col h-full bg-light-sidebar dark:bg-dark-sidebar pb-14">
       <div className="px-3 pt-3 pb-2">
+        <Link to="/" onClick={onNavigate}
+          className="block px-2 mb-2 text-sm font-semibold text-light-text-primary dark:text-dark-text-primary hover:text-accent transition-colors">
+          doc-chatter
+        </Link>
         <Link
           to="/sessions/new"
           onClick={onNavigate}
