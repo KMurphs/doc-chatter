@@ -8,10 +8,17 @@
     <link rel="manifest" href="/doc-chatter/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/doc-chatter/icon.svg" />
     <link rel="apple-touch-icon" href="/doc-chatter/icon-192.png" />
-    <script type="module" crossorigin src="/doc-chatter/assets/index-BWo1Wck6.js"></script>
+    <script type="module" crossorigin src="/doc-chatter/assets/index-CMTnU_S4.js"></script>
     <link rel="stylesheet" crossorigin href="/doc-chatter/assets/index-lB3bAJ2x.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // GitHub Pages SPA: restore path from 404 redirect
+      (function() {
+        var p = new URLSearchParams(location.search).get('p');
+        if (p) history.replaceState(null, '', p + location.hash);
+      })();
+    </script>
   </body>
 </html>

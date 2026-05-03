@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html><head>
+<script>
+  // GitHub Pages SPA redirect: rewrite path as query param so index.html can restore it
+  var seg = location.pathname.split('/').length - 1;
+  var base = '/doc-chatter';
+  location.replace(base + '/?p=' + encodeURIComponent(location.pathname.replace(base, '')) + location.search + location.hash);
+</script>
+</head></html>
