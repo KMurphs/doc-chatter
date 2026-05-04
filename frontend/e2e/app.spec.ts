@@ -1,4 +1,8 @@
 import { test, expect, Page } from '@playwright/test';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const PROFILES_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../profiles/profiles.json');
 
 // --- Helpers ---
 async function setLocalSettings(page: Page, overrides: Record<string, unknown> = {}) {
@@ -91,7 +95,7 @@ test.describe('Settings panel', () => {
     await setLocalSettings(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings' }).first().click();
-    await page.getByRole('button', { name: /Profiles/ }).click();
+    await page.getByRole('button', { name: /Advanced/ }).click();
     await expect(page.getByText('No profiles yet')).toBeVisible();
     await expect(page.getByRole('button', { name: '+ New' }).last()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Import' })).toBeVisible();
@@ -101,7 +105,7 @@ test.describe('Settings panel', () => {
     await setLocalSettings(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings' }).first().click();
-    await page.getByRole('button', { name: /Profiles/ }).click();
+    await page.getByRole('button', { name: /Advanced/ }).click();
     await page.getByRole('button', { name: '+ New' }).last().click();
 
     await page.getByPlaceholder('e.g. Groq Free').fill('Test Profile');
@@ -109,6 +113,17 @@ test.describe('Settings panel', () => {
     await page.getByRole('button', { name: 'Save profile' }).click();
 
     await expect(page.getByText('Test Profile')).toBeVisible();
+  });
+
+  test('import profiles from file', async ({ page }) => {
+    await setLocalSettings(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Settings' }).first().click();
+    await page.getByRole('button', { name: /Advanced/ }).click();
+    await page.locator('input[type="file"]').setInputFiles(PROFILES_FILE);
+    await expect(page.getByText('AWS Bedrock (Claude Sonnet 4.5)')).toBeVisible();
+    await expect(page.getByText('Groq (Llama 3.3 70B)')).toBeVisible();
+    await expect(page.getByText('OpenAI (GPT-4o mini)')).toBeVisible();
   });
 
   test('cancel discards user settings changes', async ({ page }) => {

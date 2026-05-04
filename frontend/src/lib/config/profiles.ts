@@ -1,8 +1,15 @@
-import { FactorySettings } from './app-settings';
-
-export interface Profile extends Partial<FactorySettings> {
+export interface Profile {
   id: string;
   name: string;
+  inference: {
+    chatProvider?: string;
+    providerUrl?: string;
+    providerToken?: string;
+    providerModelId?: string;
+    bedrockRegion?: string;
+    bedrockModelId?: string;
+  };
+  voice: { voiceProvider?: string };
 }
 
 const KEY = 'doc-chatter-profiles';
@@ -38,26 +45,31 @@ export function deleteProfile(id: string): void {
   save(load().filter(p => p.id !== id));
 }
 
-export function exportProfile(profile: Profile): void {
-  const blob = new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' });
+export function exportProfiles(profiles: Profile[]): void {
+  const blob = new Blob([JSON.stringify(profiles, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${profile.name.replace(/\s+/g, '-').toLowerCase()}.json`;
+  a.download = 'profiles.json';
   a.click();
   URL.revokeObjectURL(url);
 }
 
-export function importProfile(file: File): Promise<Profile> {
+export function importProfiles(file: File): Promise<Profile[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const profile = JSON.parse(reader.result as string) as Profile;
-        if (!profile.name) throw new Error('Invalid profile: missing name');
-        if (!profile.id) profile.id = crypto.randomUUID();
-        saveProfile(profile);
-        resolve(profile);
+        const data = JSON.parse(reader.result as string);
+        const profiles: Profile[] = Array.isArray(data) ? data : [data];
+        for (const p of profiles) {
+          if (!p.name) throw new Error('Invalid profile: missing name');
+          if (!p.id) p.id = crypto.randomUUID();
+          if (!p.inference) p.inference = {};
+          if (!p.voice) p.voice = {};
+          saveProfile(p);
+        }
+        resolve(profiles);
       } catch (e) { reject(e); }
     };
     reader.onerror = () => reject(reader.error);

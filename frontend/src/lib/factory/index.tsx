@@ -85,7 +85,13 @@ import { getProfile } from '../config/profiles';
 function resolveConfig(session: SessionDetail, settings: AppSettings): FactorySettings {
   if (session.profileId) {
     const profile = getProfile(session.profileId);
-    if (profile) return { ...settings, ...profile };
+    if (profile) {
+      return {
+        ...settings,
+        ...profile.inference,
+        ...profile.voice,
+      };
+    }
   }
   return settings;
 }

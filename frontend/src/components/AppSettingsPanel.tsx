@@ -71,18 +71,32 @@ export function AppSettingsPanel({ settings, onChange, onClose }: {
             <Toggle on={draft.darkMode} onToggle={() => patch({ darkMode: !draft.darkMode })} />
           </div>
 
-          {/* Profiles */}
+          {/* Advanced */}
           <button onClick={() => setShowAdvanced(!showAdvanced)}
             className="text-xs text-accent hover:underline text-left pt-2 border-t border-light-border dark:border-dark-border">
-            {showAdvanced ? '▾ Profiles' : '▸ Profiles'}
+            {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
           </button>
 
           {showAdvanced && (
-            <div>
-              <p className="text-[10px] text-light-muted dark:text-dark-muted mb-3">
-                Profiles bundle provider configs (inference, storage, voice). Assign a profile to each session.
-              </p>
-              <ProfileManager />
+            <div className="flex flex-col gap-4">
+              {/* Storage — app-level setting */}
+              <div>
+                <label className={labelCls}>Session storage</label>
+                <select className={inputCls + ' appearance-none cursor-pointer'} value={draft.storageMode} onChange={e => patch({ storageMode: e.target.value })}>
+                  <option value="local">💾 Local (IndexedDB)</option>
+                  <option value="remote">☁️ Remote (API Gateway)</option>
+                </select>
+                <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">Where new sessions are created and stored</p>
+              </div>
+
+              <hr className="border-light-border dark:border-dark-border" />
+
+              {/* Profiles */}
+              <div>
+                <label className={labelCls}>Inference profiles</label>
+                <p className="text-[10px] text-light-muted dark:text-dark-muted mb-2">Reusable inference + voice configs — assign to sessions</p>
+                <ProfileManager />
+              </div>
             </div>
           )}
 
