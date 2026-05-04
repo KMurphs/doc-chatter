@@ -24,3 +24,4 @@ samconfig.toml
 build/
 
 .playwright-mcpfrontend/profiles/
+.playwright-mcp/

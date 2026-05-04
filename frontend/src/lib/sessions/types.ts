@@ -26,6 +26,7 @@ export interface CreateSessionRequest {
   model?: string;
   subject_expertise?: string;
   research_expertise?: string;
+  system_prompt?: string;
   profileId?: string;
 }
 

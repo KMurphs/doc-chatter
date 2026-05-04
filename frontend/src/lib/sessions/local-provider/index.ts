@@ -49,7 +49,7 @@ export const service: SessionService = {
       paper_text: data.paper_text,
       history: [],
       model: data.model || 'sonnet',
-      system_prompt: '',
+      system_prompt: data.system_prompt || '',
       subject_expertise: data.subject_expertise || 'medium',
       research_expertise: data.research_expertise || 'medium',
       created_at: now,
