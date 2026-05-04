@@ -4,7 +4,10 @@ import { test, expect, Page } from '@playwright/test';
 async function setLocalSettings(page: Page, overrides: Record<string, unknown> = {}) {
   const settings = {
     storageMode: 'local',
-    chatProvider: 'bedrock',
+    chatProvider: 'generic',
+    providerUrl: 'https://api.groq.com/openai/v1/chat/completions',
+    providerToken: 'test',
+    providerModelId: 'llama-3.1-8b-instant',
     bedrockRegion: 'us-east-1',
     bedrockModelId: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     triggerWord: 'send',
@@ -12,9 +15,6 @@ async function setLocalSettings(page: Page, overrides: Record<string, unknown> =
     ttsSpeed: 1.1,
     darkMode: false,
     renderMarkdown: true,
-    providerUrl: '',
-    providerToken: '',
-    providerModelId: '',
     ...overrides,
   };
   await page.goto('/');
@@ -87,76 +87,72 @@ test.describe('Settings panel', () => {
     await expect(page.getByText('Speech speed')).toBeVisible();
   });
 
-  test('advanced section shows axis dropdowns', async ({ page }) => {
+  test('profiles section shows create and import buttons', async ({ page }) => {
     await setLocalSettings(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings' }).first().click();
-    await page.getByRole('button', { name: /Advanced/ }).click();
-    await expect(page.getByText('Session storage', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Profiles/ }).click();
+    await expect(page.getByText('No profiles yet')).toBeVisible();
+    await expect(page.getByRole('button', { name: '+ New' }).last()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Import' })).toBeVisible();
+  });
+
+  test('create a profile with provider config', async ({ page }) => {
+    await setLocalSettings(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Settings' }).first().click();
+    await page.getByRole('button', { name: /Profiles/ }).click();
+    await page.getByRole('button', { name: '+ New' }).last().click();
+
+    await page.getByPlaceholder('e.g. Groq Free').fill('Test Profile');
     await expect(page.getByText('Inference provider', { exact: true })).toBeVisible();
-    await expect(page.getByText('Voice provider', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Save profile' }).click();
+
+    await expect(page.getByText('Test Profile')).toBeVisible();
   });
 
-  test('switching inference provider shows different config fields', async ({ page }) => {
+  test('cancel discards user settings changes', async ({ page }) => {
     await setLocalSettings(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings' }).first().click();
-    await page.getByRole('button', { name: /Advanced/ }).click();
-
-    // Bedrock is default — should show Region and Model ID
-    await expect(page.getByText('Region')).toBeVisible();
-
-    // Switch to generic
-    await page.locator('select').nth(1).selectOption('generic');
-    await expect(page.getByText('Endpoint URL')).toBeVisible();
-    await expect(page.getByText('API Key', { exact: true })).toBeVisible();
-  });
-
-  test('cancel discards changes', async ({ page }) => {
-    await setLocalSettings(page);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Settings' }).first().click();
-    await page.getByRole('button', { name: /Advanced/ }).click();
-    await page.locator('select').nth(1).selectOption('generic');
+    await page.getByPlaceholder('e.g. send, over').fill('go');
     await page.getByRole('button', { name: 'Cancel' }).click();
 
-    const provider = await page.evaluate(() => {
+    const triggerWord = await page.evaluate(() => {
       const s = localStorage.getItem('doc-chatter-app-settings');
-      return s ? JSON.parse(s).chatProvider : null;
+      return s ? JSON.parse(s).triggerWord : null;
     });
-    expect(provider).toBe('bedrock');
+    expect(triggerWord).toBe('send');
   });
 
-  test('save persists changes', async ({ page }) => {
+  test('save persists user settings changes', async ({ page }) => {
     await setLocalSettings(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings' }).first().click();
-    await page.getByRole('button', { name: /Advanced/ }).click();
-    await page.locator('select').nth(1).selectOption('generic');
+    await page.getByPlaceholder('e.g. send, over').fill('go');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const provider = await page.evaluate(() => {
+    const triggerWord = await page.evaluate(() => {
       const s = localStorage.getItem('doc-chatter-app-settings');
-      return s ? JSON.parse(s).chatProvider : null;
+      return s ? JSON.parse(s).triggerWord : null;
     });
-    expect(provider).toBe('generic');
+    expect(triggerWord).toBe('go');
   });
 });
 
 // ============================================================
-// Chat (local + bedrock) — requires valid AWS credentials
+// Chat with Bedrock — requires valid AWS credentials
 // ============================================================
 test.describe('Chat with Bedrock', () => {
   test.skip(!process.env.TEST_BEDROCK, 'Set TEST_BEDROCK=1 with valid Cognito session to run');
 
   test('send message and receive response', async ({ page }) => {
-    await setLocalSettings(page);
+    await setLocalSettings(page, { chatProvider: 'bedrock' });
     await createLocalSession(page, 'Bedrock Test', 'Quantum computers use qubits. Unlike classical bits, qubits can be in superposition.');
 
     await page.getByRole('textbox', { name: 'Ask about the paper...' }).fill('What is a qubit?');
     await page.getByRole('textbox', { name: 'Ask about the paper...' }).press('Enter');
 
-    // Wait for response (Bedrock can take 10-15s)
     await expect(page.locator('button:has-text("🔊")').first()).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('What is a qubit?')).toBeVisible();
   });

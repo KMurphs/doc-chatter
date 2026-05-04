@@ -112,16 +112,7 @@ function ChatTranscript({ history, sending, speaking, supported, speak, messages
   );
 }
 
-function ErrorBanner({ error }: { error: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="px-4 py-2 flex items-start gap-2 shrink-0 max-w-full overflow-hidden">
-      <span className="text-sm text-red-500 break-all line-clamp-2 min-w-0">{error}</span>
-      <button onClick={() => { navigator.clipboard.writeText(error); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-        className="text-xs text-red-400 hover:text-red-300 shrink-0 mt-0.5">{copied ? '✓' : '📋'}</button>
-    </div>
-  );
-}
+import { ErrorBanner } from '../components/ErrorBanner';
 
 // --- Main ChatPage ---
 export function ChatPage() {
@@ -169,7 +160,7 @@ export function ChatPage() {
     try {
       if (!id) return;
       setSession(await sessionService.get(id));
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to load'); }
+    } catch (e: unknown) { setError(e instanceof Error ? `${e.message}\n${e.stack || ''}` : 'Failed to load'); }
     finally { setLoading(false); }
   }
 
@@ -186,7 +177,7 @@ export function ChatPage() {
       setSession(prev => prev ? { ...prev, history: [...prev.history, { role: 'assistant', content: answer }] } : prev);
       if (wasVoice) speak(answer);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Chat failed');
+      setError(e instanceof Error ? `${e.message}\n${e.stack || ''}` : 'Chat failed');
       setSession(prev => prev ? { ...prev, history: prev.history.slice(0, -1) } : prev);
     } finally { setSending(false); }
   }

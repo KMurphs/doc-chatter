@@ -17,6 +17,7 @@ export function NewSessionPage() {
       model: data.model,
       subject_expertise: data.subject_expertise,
       research_expertise: data.research_expertise,
+      profileId: data.profileId,
     });
     addSession({
       session_id: res.session_id,

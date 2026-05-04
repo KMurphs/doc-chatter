@@ -328,7 +328,49 @@ Done when: the app works fully offline for session management, and chat works wi
 - Local mode: no login required for CRUD, only provider needs config
 - Remote mode: existing Cognito flow unchanged
 
-### Milestone 7 — Polish
+### Milestone 7 — Profiles
+
+A profile is a reusable provider configuration. It bundles the settings the factory needs to wire up providers — primarily inference, optionally session storage and voice. Profiles decouple "how to talk to the LLM" from "which paper am I reading."
+
+**Data model:**
+```typescript
+interface Profile {
+  id: string;              // crypto.randomUUID()
+  name: string;            // "Groq Free", "Bedrock Sonnet", etc.
+  // Inference (required)
+  chatProvider: string;
+  providerUrl: string;
+  providerToken: string;
+  providerModelId: string;
+  bedrockRegion: string;
+  bedrockModelId: string;
+  // Session storage (optional — falls back to app default)
+  storageMode?: string;
+  // Voice (optional — falls back to app default)
+  voiceProvider?: string;
+}
+```
+
+**Storage:** Profiles live in localStorage as a JSON array. Small data, no need for IndexedDB.
+
+**Per-session binding:** Each session stores a `profileId`. When loading a session, the factory reads the profile and wires providers accordingly. If the profile is missing (deleted, or imported session), falls back to the app default.
+
+**Export/Import:** Export writes a single profile as a `.json` file. Import reads a `.json` file and adds the profile to the local list. API keys are included in the export (user's responsibility to handle the file securely — noted in the Cloudflare Worker investigation item).
+
+**UI:**
+- Profile manager accessible from settings panel (list, create, edit, delete)
+- Profile selector on session creation and edit pages
+- Import/export buttons in profile manager
+
+**Steps:**
+1. Profile CRUD in `lib/config/profiles.ts` (localStorage-backed)
+2. Add `profileId` to session data model
+3. Factory reads profile for active session, merges with app defaults
+4. Profile manager UI component
+5. Export/import (JSON file download/upload)
+6. Profile selector in SessionForm and EditSessionPage
+
+### Milestone 8 — Polish
 
 Make it safe to leave running. Add remaining security layers, the expertise-adaptive system prompt, PDF upload, and the editable prompt UI.
 

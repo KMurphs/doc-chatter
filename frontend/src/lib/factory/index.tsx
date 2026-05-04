@@ -79,22 +79,42 @@ interface FactoryContext {
   addSession: (session: SessionSummary) => void;
 }
 
+import { getProfile } from '../config/profiles';
+
+// --- Resolve provider config from profile or app defaults ---
+function resolveConfig(session: SessionDetail, settings: AppSettings): FactorySettings {
+  if (session.profileId) {
+    const profile = getProfile(session.profileId);
+    if (profile) return { ...settings, ...profile };
+  }
+  return settings;
+}
+
+function buildInference(config: FactorySettings): InferenceService {
+  return config.chatProvider === 'bedrock'
+    ? createBedrockInference(config.bedrockRegion || 'us-east-1', config.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0')
+    : createGenericInference(config.providerUrl, config.providerToken, config.providerModelId);
+}
+
+function buildSessionService(config: FactorySettings) {
+  return config.storageMode === 'local' ? localSessionService : remoteProvider.service;
+}
+
 const Ctx = createContext<FactoryContext | null>(null);
 
 // --- Factory logic ---
 function buildProviders(settings: AppSettings): Providers {
-  const sessionService = settings.storageMode === 'local' ? localSessionService : remoteProvider.service;
+  const sessionService = buildSessionService(settings);
   const SessionSettings = SESSION_PROVIDERS.find(p => p.key === settings.storageMode)?.Settings ?? null;
-
-  const rawInference = settings.chatProvider === 'bedrock'
-    ? createBedrockInference(settings.bedrockRegion || 'us-east-1', settings.bedrockModelId || 'us.anthropic.claude-sonnet-4-5-20250929-v1:0')
-    : createGenericInference(settings.providerUrl, settings.providerToken, settings.providerModelId);
 
   const inferenceService: InferenceService = {
     async chat(session: SessionDetail, question: string): Promise<string> {
-      const answer = await rawInference.chat(session, question);
-      await sessionService.appendHistory(session.session_id, 'user', question);
-      await sessionService.appendHistory(session.session_id, 'assistant', answer);
+      const config = resolveConfig(session, settings);
+      const inference = buildInference(config);
+      const storage = buildSessionService(config);
+      const answer = await inference.chat(session, question);
+      await storage.appendHistory(session.session_id, 'user', question);
+      await storage.appendHistory(session.session_id, 'assistant', answer);
       return answer;
     },
   };

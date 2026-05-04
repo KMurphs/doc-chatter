@@ -42,4 +42,6 @@ export { useUserSettings, AppSettingsProvider } from './config/app-settings';
 
 // Internal — only for settings panel and App.tsx (which hosts the panel)
 export type { AppSettings, FactorySettings } from './config/app-settings';
+export { listProfiles, getProfile, saveProfile, deleteProfile, exportProfile, importProfile } from './config/profiles';
+export type { Profile } from './config/profiles';
 export { useAppSettings } from './config/app-settings';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AppSettings, FactorySettings, AXES } from '../lib';
+import { AppSettings } from '../lib';
+import { ProfileManager } from './ProfileManager';
 
 export function AppSettingsPanel({ settings, onChange, onClose }: {
   settings: AppSettings;
@@ -11,7 +12,6 @@ export function AppSettingsPanel({ settings, onChange, onClose }: {
 
   const labelCls = 'text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary';
   const inputCls = 'w-full mt-1 px-3 py-2 rounded-lg text-sm bg-light-surface-alt dark:bg-dark-surface-alt border border-light-border dark:border-dark-border focus:outline-none focus:border-accent/50';
-  const selectCls = inputCls + ' appearance-none cursor-pointer';
 
   function patch(partial: Partial<AppSettings>) {
     setDraft(prev => ({ ...prev, ...partial }));
@@ -71,35 +71,18 @@ export function AppSettingsPanel({ settings, onChange, onClose }: {
             <Toggle on={draft.darkMode} onToggle={() => patch({ darkMode: !draft.darkMode })} />
           </div>
 
-          {/* Advanced — driven by AXES registry */}
+          {/* Profiles */}
           <button onClick={() => setShowAdvanced(!showAdvanced)}
             className="text-xs text-accent hover:underline text-left pt-2 border-t border-light-border dark:border-dark-border">
-            {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
+            {showAdvanced ? '▾ Profiles' : '▸ Profiles'}
           </button>
 
           {showAdvanced && (
-            <div className="flex flex-col gap-4">
-              {AXES.map((axis, i) => {
-                const currentKey = (draft[axis.settingsKey] ?? axis.options[0]?.key) as string;
-                const active = axis.options.find(o => o.key === currentKey) ?? axis.options[0];
-                return (
-                  <div key={axis.settingsKey} className="flex flex-col gap-3">
-                    {i > 0 && <hr className="border-light-border dark:border-dark-border" />}
-                    <div>
-                      <label className={labelCls}>{axis.label}</label>
-                      {axis.options.length > 1 ? (
-                        <select className={selectCls} value={currentKey}
-                          onChange={e => patch({ [axis.settingsKey]: e.target.value } as Partial<FactorySettings>)}>
-                          {axis.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                        </select>
-                      ) : (
-                        <p className="text-xs text-light-muted dark:text-dark-muted mt-1">{active?.label}</p>
-                      )}
-                    </div>
-                    {active?.Settings && <active.Settings draft={draft} onChange={patch} />}
-                  </div>
-                );
-              })}
+            <div>
+              <p className="text-[10px] text-light-muted dark:text-dark-muted mb-3">
+                Profiles bundle provider configs (inference, storage, voice). Assign a profile to each session.
+              </p>
+              <ProfileManager />
             </div>
           )}
 

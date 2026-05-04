@@ -30,6 +30,7 @@ export function EditSessionPage() {
       subject_expertise: data.subject_expertise,
       research_expertise: data.research_expertise,
       system_prompt: data.system_prompt,
+      profileId: data.profileId,
     });
     refresh();
     navigate(`/sessions/${id}`);
@@ -62,6 +63,7 @@ export function EditSessionPage() {
             subject_expertise: session.subject_expertise,
             research_expertise: session.research_expertise,
             system_prompt: session.system_prompt,
+            profileId: session.profileId,
           }}
           onSubmit={handleSave}
           submitLabel="Save Changes"

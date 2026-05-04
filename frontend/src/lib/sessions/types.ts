@@ -15,6 +15,7 @@ export interface SessionDetail {
   system_prompt: string;
   subject_expertise: string;
   research_expertise: string;
+  profileId?: string;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +26,7 @@ export interface CreateSessionRequest {
   model?: string;
   subject_expertise?: string;
   research_expertise?: string;
+  profileId?: string;
 }
 
 export interface UpdateSessionRequest {
@@ -33,6 +35,7 @@ export interface UpdateSessionRequest {
   subject_expertise?: string;
   research_expertise?: string;
   title?: string;
+  profileId?: string;
 }
 
 export interface SessionService {

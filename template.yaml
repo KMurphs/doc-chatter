@@ -135,10 +135,7 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PATCH,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Stream-Token'"
-        AllowOrigin: !If
-          - IsProd
-          - "'https://CLOUDFRONT_DOMAIN_HERE'"
-          - "'http://localhost:5174'"
+        AllowOrigin: "'*'"
 
   # ============================================================
   # LAMBDA

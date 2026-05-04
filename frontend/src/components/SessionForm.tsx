@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ProfileSelect } from './ProfileManager';
+import { ErrorBanner } from './ErrorBanner';
 
 export interface SessionFormData {
   title: string;
@@ -7,6 +9,7 @@ export interface SessionFormData {
   subject_expertise: string;
   research_expertise: string;
   system_prompt: string;
+  profileId?: string;
 }
 
 interface Props {
@@ -34,7 +37,7 @@ export function SessionForm({ initial, onSubmit, submitLabel, hidePaper }: Props
     try {
       await onSubmit(form);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Something went wrong');
+      setError(e instanceof Error ? `${e.message}\n${e.stack || ''}` : 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -101,6 +104,10 @@ export function SessionForm({ initial, onSubmit, submitLabel, hidePaper }: Props
         </div>
       </div>
 
+      <div className="mt-8">
+        <ProfileSelect value={form.profileId} onChange={id => setForm(prev => ({ ...prev, profileId: id }))} />
+      </div>
+
       <label className={labelCls + " mt-8"}>System prompt</label>
       <textarea
         className={inputCls + " h-48 resize-y"}
@@ -109,7 +116,7 @@ export function SessionForm({ initial, onSubmit, submitLabel, hidePaper }: Props
         onChange={e => set('system_prompt', e.target.value)}
       />
 
-      {error && <p className="mt-4 text-sm text-red-500 dark:text-red-400">{error}</p>}
+      {error && <ErrorBanner error={error} />}
 
       <button
         onClick={handleSubmit}
