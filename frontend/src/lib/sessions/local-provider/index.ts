@@ -52,6 +52,7 @@ export const service: SessionService = {
       system_prompt: data.system_prompt || '',
       subject_expertise: data.subject_expertise || 'medium',
       research_expertise: data.research_expertise || 'medium',
+      profileId: data.profileId,
       created_at: now,
       updated_at: now,
     };
