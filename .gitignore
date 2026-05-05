@@ -25,3 +25,4 @@ build/
 
 .playwright-mcpfrontend/profiles/
 .playwright-mcp/
+frontend/profiles/profiles.json

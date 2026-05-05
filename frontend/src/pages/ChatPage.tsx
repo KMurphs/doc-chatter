@@ -3,6 +3,32 @@ import { useParams } from 'react-router-dom';
 import { useSessions, useInference, useVoice, useUserSettings, SessionDetail, VoiceMode } from '../lib';
 import { useSidebar, useSettingsModal } from '../App';
 
+// --- Wake Lock: keep screen on during chat ---
+function useWakeLock() {
+  const lock = useRef<WakeLockSentinel | null>(null);
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return;
+    let released = false;
+    (async () => {
+      try {
+        lock.current = await navigator.wakeLock.request('screen');
+        lock.current.addEventListener('release', () => { lock.current = null; });
+      } catch { /* ignore — user denied or not supported */ }
+    })();
+    const reacquire = async () => {
+      if (!released && document.visibilityState === 'visible') {
+        try { lock.current = await navigator.wakeLock.request('screen'); } catch { /* not supported */ }
+      }
+    };
+    document.addEventListener('visibilitychange', reacquire);
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', reacquire);
+      lock.current?.release();
+    };
+  }, []);
+}
+
 // --- Panel background based on voice state ---
 function panelBg(listening: boolean, speaking: boolean, sending: boolean) {
   if (listening) return 'bg-accent/10 dark:bg-accent/20 transition-colors duration-500';
@@ -116,6 +142,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 
 // --- Main ChatPage ---
 export function ChatPage() {
+  useWakeLock();
   const { id } = useParams<{ id: string }>();
   const { openSidebar } = useSidebar();
   const { openSettings } = useSettingsModal();
